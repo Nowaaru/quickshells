@@ -7,12 +7,22 @@ PopupWindow {
     property alias textColor: tooltipContent.color;
     property alias text: tooltipContent.text;
     property alias border: tooltipInner.border;
+    property alias opacity: tooltipInner.opacity;
+    property alias rightPadding: textWrapper.rightMargin
+    property alias leftPadding: textWrapper.leftMargin
+    property alias horizontalAlignment: tooltipContent.horizontalAlignment;
+    property alias verticalAlignment: tooltipContent.verticalAlignment;
+    
+    
+    readonly property var textObject: tooltipContent
 
     id: tooltip
     mask: Region {}
     color: "transparent"
 
-    implicitWidth: metrics.width + (textWrapper.leftMargin * 2) + (textWrapper.leftMargin * 0.75)
+    implicitWidth: metrics.width 
+        + (textWrapper.leftMargin * 2) + (textWrapper.leftMargin * 0.75) 
+        + (textWrapper.rightMargin * 2) + (textWrapper.rightMargin * 0.75) 
     implicitHeight: 18
 
 
