@@ -8,13 +8,15 @@
  */
 
 import Quickshell // for PanelWindows
+import Quickshell.Widgets // for IconImages
+import Quickshell.Hyprland // for Hyprland IPC
 import QtQuick // for Texts
 import QtQuick.Shapes // for Shapes
 
 ShellRoot {
     id: taskbar
     /* properties */
-    property alias exclusiveZone: taskbarOuter.exclusiveZone;
+    property alias exclusiveZone: taskbarOuter.exclusiveZone
     property var taskbarColor: "#0F0F0F"
     property var taskbarMidColor: "#282925"
     property var taskbarComplimentColor: "#444436"
@@ -51,6 +53,7 @@ ShellRoot {
         PanelWindow {
             id: taskbarInner
             color: 'transparent'
+            mask: Region {}
             exclusionMode: ExclusionMode.Ignore
             implicitWidth: taskbarInner.width
             implicitHeight: taskbar.implicitHeight
@@ -72,7 +75,6 @@ ShellRoot {
                 height: 4
             }
 
-            // TODO: turn these into actual wavey lines that go from left and right of the taskbarInner
             Rectangle {
                 id: taskbarLining
                 z: -100
@@ -140,7 +142,7 @@ ShellRoot {
 
                 anchors {
                     right: taskbarSmoother.left
-                    bottom: taskbarSmoother.bottom
+                    bottom: parent.bottom
                     rightMargin: 0
                 }
 
@@ -165,7 +167,7 @@ ShellRoot {
 
                 anchors {
                     left: taskbarSmoother.right
-                    bottom: taskbarSmoother.bottom
+                    bottom: parent.bottom
                     rightMargin: 0
                 }
 
@@ -230,7 +232,7 @@ ShellRoot {
         PanelWindow {
             id: taskbarContainer
             implicitHeight: taskbar.implicitHeight - 44
-            implicitWidth: screen.width * 0.7
+            implicitWidth: 256
             exclusionMode: ExclusionMode.Ignore
             color: 'transparent'
 
@@ -241,22 +243,167 @@ ShellRoot {
 
             margins.bottom: taskbar.taskbarMarginBottom
 
-            Text {
-                text: "there was supposed to be something here but i got tired (sorry)"
-                anchors.centerIn: parent
-                color: taskbar.taskbarShadowColor
-                font.bold: true
+            ListView {
+                id: applicationsListView
+                property int itemHeight: 32;
+                property int itemPadding: 8;
+                property int itemWidth: itemHeight;
+
+                Component {
+                    id: taskbarItemDelegate
+                    Rectangle {
+                        id: itemRect
+
+                        required property var modelData
+                        required property int index
+                        property var baseImageSource: {
+                            const { lastIpcObject } = modelData;
+                            const possibleQueryItems = [
+                                lastIpcObject.class ?? "",
+                                lastIpcObject.initialClass,
+                                lastIpcObject.title,
+                                ...([lastIpcObject.class ?? "", lastIpcObject.initialClass].map((e) => e ? e.match(/^(\w+)/)[0] : undefined).filter((e) => e)),
+                            ].filter((e) => e)
+
+                            const lowercaseQueryItems = possibleQueryItems.map((e) => e.toLowerCase())
+                            const outUrl = [
+                                ...possibleQueryItems,
+                                ...lowercaseQueryItems
+                            ].map((e) => Quickshell.iconPath(e, true)).filter((e) => e.length > 0)[0]
+
+                            console.log(`out url for ${lastIpcObject.initialClass} - '${modelData.title}' (${modelData.lastIpcObject.address}): ${outUrl} (${Quickshell.iconPath("kde.discover", true)})`)
+
+                            return outUrl ?? ""
+                        }
+
+                        color: "transparent"
+                        radius: 8
+                        width: applicationsListView.itemWidth
+                        height: applicationsListView.itemHeight
+
+                        anchors {
+                            verticalCenter: parent ? parent.verticalCenter : undefined
+                        }
+
+
+                        Component {
+                            id: imageIfFound
+
+
+                            Item {
+
+                                WrapperMouseArea {
+                                    id: hoverArea
+                                    margin: applicationsListView.itemPadding / 2
+                                    hoverEnabled: true
+
+                                    ElapsedTimer {
+                                        id: hoverElapsedTime
+                                    }
+
+                                    onEntered: {
+                                        hoverElapsedTime.restart()
+                                        itemRect.color = "#22FFFFFF"
+                                    }
+
+                                    onExited: {
+                                        itemRect.color = "transparent"
+                                    }
+
+
+                                    IconImage {
+                                        id: icon
+                                        implicitSize: applicationsListView.itemHeight - applicationsListView.itemPadding
+
+                                        mipmap: true
+                                        source: baseImageSource
+                                        asynchronous: true
+
+                                        Tooltip {
+                                            visible: hoverArea.containsMouse
+                                            text: 
+                                                (modelData.lastIpcObject.class.includes(".") ? modelData.lastIpcObject.title : modelData.lastIpcObject.class.match(/^\w+/)[0]).replace(/[^]/, (e) => e.toUpperCase())
+
+                                            horizontalAlignment: Text.AlignHCenter
+                                            leftPadding: 2
+                                            rightPadding: 2
+
+                                            anchor {
+                                                item: icon
+                                                rect.y: -icon.implicitSize
+                                                rect.x: (icon.implicitSize / 2) - (this.width / 2)
+                                            }
+
+                                            opacity: 1
+                                            backgroundColor: "#44FFFFFF"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // TODO: add rounded greyish-line underneath elements 
+                        // when they are opened, and a 4px.-ish dot if they're unopened but hovered
+                        Component {
+                            id: imageIfNotFound
+                            WrapperMouseArea {
+                                margin: applicationsListView.itemPadding / 2
+                                Rectangle {
+
+                                    width: parent.parent.width
+                                    height: parent.parent.height
+                                    color: "#AAFFFFFF"
+                                    radius: 100
+
+
+
+                                    Image {
+                                        width: height * (0.75)
+                                        height: 16
+                                        source: `${Quickshell.workingDirectory}/assets/question-solid.svg`
+
+                                    }
+                                }
+                            }
+                        }
+
+                        Loader {
+                            id: imageLoader
+                            sourceComponent: baseImageSource ? imageIfFound : imageIfNotFound
+                        }
+                    }
+                }
+
+                // remove duplicates, they will be restored 
+                // via a panelmenu on hover
+                model: ScriptModel {
+                    values: Hyprland.toplevels.values
+                        .filter((e,k,arr) => arr.findIndex((f) => f.lastIpcObject.class === e.lastIpcObject.class) === k)
+                        .filter((e) => e.lastIpcObject.address)
+                }
+
+                spacing: itemWidth/4
+                orientation: Qt.Horizontal
+                delegate: taskbarItemDelegate
+                anchors {
+                    fill: parent
+                    leftMargin: itemWidth
+                    rightMargin: itemHeight
+                }
+
+                Component.onCompleted: {
+                    Hyprland.rawEvent.connect((rawEvent) =>
+                    {
+                        const { name, data } = rawEvent;
+                        if (name == "openwindow")
+                        {
+                            console.log("window opened")
+                            Hyprland.refreshToplevels()
+                        }
+                    })
+                }
+                
             }
         }
     }
-    /*
-     * probably going to have to get the pixel position of the element's top left and top right
-     * and find the exponent and uneg it
-     */
-    // Text {
-    //     // center the bar in its parent component (the window)
-    //     anchors.centerIn: parent
-    //
-    //     text: "hello world!"
-    // }
 }
