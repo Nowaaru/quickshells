@@ -57,8 +57,8 @@ ShellRoot {
         mask: Region {}
 
         Topbar {
-            exclusiveZone: ((taskbar.implicitHeight - taskbar.exclusiveZone) / taskbar.implicitHeight) * root.topbarHeight 
             id: topbar
+            exclusiveZone: ((taskbar.implicitHeight - taskbar.exclusiveZone) / taskbar.implicitHeight) * root.topbarHeight
             implicitHeight: root.topbarHeight
             color: taskbar.taskbarColor
 
@@ -96,6 +96,8 @@ ShellRoot {
         PanelWindow {
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
+            mask: Region {}
+
             anchors {
                 top: true
                 left: true
@@ -130,6 +132,7 @@ ShellRoot {
         PanelWindow {
             color: "transparent"
             exclusionMode: ExclusionMode.Ignore
+            mask: Region {}
             anchors {
                 top: true
                 right: true
@@ -169,13 +172,11 @@ ShellRoot {
                 top: 1
                 left: waveyLineTopLeft.width + (waveyLineTopLeft.width / 24) // 96 * 4 = 24; ideally /24 will give a nice ratio  across multiple ratios
             }
-            
-
 
             Button {
-                height: parent.height 
-                width: parent.width 
                 id: menuButton
+                height: parent.height
+                width: parent.width
                 background: Rectangle {
                     id: menuBackground
                     color: menuButton.hovered ? "#44FFFFFF" : "transparent"
@@ -208,12 +209,11 @@ ShellRoot {
                 top: 1
                 right: waveyLineTopRight.width + (waveyLineTopRight.width / 24) // 96 * 4 = 24; ideally /24 will give a nice ratio  across multiple ratios
             }
-            
 
             Button {
-                height: parent.height 
-                width: parent.width 
                 id: powerButton
+                height: parent.height
+                width: parent.width
                 background: Rectangle {
                     id: powerBackground
                     color: powerButton.hovered ? "#44FFFFFF" : "transparent"
@@ -229,9 +229,5 @@ ShellRoot {
                 }
             }
         }
-
-
-
     }
-
 }
