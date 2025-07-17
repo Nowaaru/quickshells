@@ -1,3 +1,5 @@
+//@ pragma UseQApplication
+
 import Quickshell // for PanelWindows
 import Quickshell.Widgets // for Wrappers
 import QtQuick // for Texts

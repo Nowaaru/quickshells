@@ -14,6 +14,7 @@ import Quickshell.Services.SystemTray // for SysTray Support
 import Quickshell.Hyprland // for Hyprland IPC
 import QtQuick // for Texts
 import QtQuick.Shapes // for Shapes
+import QtQuick.Controls // for Shapes
 
 ShellRoot {
     id: taskbar
@@ -176,20 +177,9 @@ ShellRoot {
             }
         }
 
-        // PopupWindow {
-        //     id: waveyTrayContainerRight
-        //     visible: true
-        //     implicitHeight: taskbarContainer.implicitHeight
-        //     color: "red"
-        //     
-        //     anchor {
-        //         window: sysTrayContainer
-        //         rect.y: 0
-        //         rect.x: this.width
-        //     }
-        //
-        // }
-
+        // TODO:: implement upwards-facing chevron that appears only after
+        // 'maxItems' is achieved or 'hiddenItems' is populated and matches
+        // against the target tray entry.
         PanelWindow {
             id: sysTrayContainer
             exclusionMode: ExclusionMode.Ignore
@@ -240,6 +230,8 @@ ShellRoot {
                     horizontalCenter: parent.horizontalCenter
                 }
 
+
+
                 Component {
                     id: delegate
                     Rectangle {
@@ -253,24 +245,49 @@ ShellRoot {
 
                         color: mouseArea.containsMouse ? "#22FFFFFF" : "transparent"
                         radius: 8
+
+                        QsMenuAnchor {
+                            id: menuAnchor
+                            menu: modelData.menu
+                            anchor {
+                                item: icon
+                                rect {
+                                    y: -icon.height - (icon.height / 4)
+                                    x: -(icon.width * 2) - (lView.spacing)
+                                }
+                            }
+                        }
+
                         WrapperMouseArea {
                             id: mouseArea
                             hoverEnabled: true
                             implicitWidth: lView.itemWidth - lView.imagePadding
                             implicitHeight: lView.itemWidth - lView.imagePadding
+                            acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                            onClicked: {
+                                menuAnchor.visible ? menuAnchor.close() : menuAnchor.open()
+                            }
+
                             anchors {
                                 centerIn: parent
                             }
+
                             Image {
+
                                 id: icon
                                 width: parent.width
                                 height: parent.height
+                                sourceSize.width: width
+                                sourceSize.height: height
 
                                 mipmap: true
                                 source: { 
                                     
                                     return modelData.icon
                                 }
+
+
                                 asynchronous: true
 
 
@@ -387,21 +404,6 @@ ShellRoot {
 
                 delegate: delegate
             }
-
-
-            // PopupWindow {
-            //     id: waveyTrayContainerRight
-            //     visible: true
-            //     implicitHeight: taskbarContainer.implicitHeight
-            //     color: "transparent"
-            //     
-            //     anchor {
-            //         item: trayLining
-            //         rect.y: 0
-            //         rect.x: -this.width * 0.8
-            //     }
-            //
-            // }
         }
 
         PanelWindow {
@@ -427,6 +429,7 @@ ShellRoot {
                 property int itemPadding: 8;
                 property int itemWidth: itemHeight;
 
+
                 Component {
                     id: taskbarItemDelegate
                     Rectangle {
@@ -440,7 +443,7 @@ ShellRoot {
                                 lastIpcObject.class ?? "",
                                 lastIpcObject.initialClass,
                                 lastIpcObject.title,
-                                ...([lastIpcObject.class ?? "", lastIpcObject.initialClass].map((e) => e ? e.match(/^(\w+)/)[0] : undefined).filter((e) => e)),
+                                ...([lastIpcObject.class ?? "", lastIpcObject.initialClass].map((e) => e ? e.match(/^(\w+)/)?.[0] : undefined).filter((e) => e)),
                             ].filter((e) => e)
 
                             const lowercaseQueryItems = possibleQueryItems.map((e) => e.toLowerCase())
@@ -467,13 +470,14 @@ ShellRoot {
                         Component {
                             id: imageIfFound
 
-
                             Item {
 
                                 WrapperMouseArea {
                                     id: hoverArea
                                     margin: applicationsListView.itemPadding / 2
                                     hoverEnabled: true
+                                    acceptedButtons: Qt.RightButton
+
 
                                     ElapsedTimer {
                                         id: hoverElapsedTime
@@ -489,13 +493,189 @@ ShellRoot {
                                     }
 
 
-                                    IconImage {
+                                    Component.onCompleted: {
+                                        console.log(DesktopEntries.applications.values[0].actions)
+                                    }
+
+                                    // QsMenuAnchor {
+                                    //     id: menuAnchor
+                                    //     menu: modelData.menu
+                                    //     anchor {
+                                    //         item: icon
+                                    //         rect {
+                                    //             y: -icon.height - (icon.height / 4)
+                                    //             x: -(icon.width * 2) - (lView.spacing)
+                                    //         }
+                                    //     }
+                                    // }
+
+                                    // Region { 
+                                    //     id: clickedRegion
+                                    //     item: itemRect
+                                    //     intersection: Intersection.Combine
+                                    //
+                                    //     Region {
+                                    //         item: maskMouseArea
+                                    //         intersection: Intersection.Xor
+                                    //     }
+                                    // }
+                                    
+
+                                    onClicked: {
+
+                                        menuWindow.visible = !menuWindow.visible
+                                    }
+
+
+                                    child: IconImage {
                                         id: icon
                                         implicitSize: applicationsListView.itemHeight - applicationsListView.itemPadding
 
                                         mipmap: true
                                         source: baseImageSource
                                         asynchronous: true
+
+
+                                        PopupWindow {
+                                            id: menuWindow
+                                            visible: false
+                                            color: "transparent"
+                                            implicitWidth: 160
+                                            implicitHeight: 32 * contextModel.values.length
+                                            anchor {
+                                                item: icon
+                                                edges: Edges.Top
+                                                rect {
+                                                    y: -height
+                                                    x: -(width - (lView.spacing * 2 )) / 2 + (icon.width / 2) - lView.spacing
+                                                }
+                                            }
+
+                                            Rectangle {
+                                                id: containerItem
+                                                width: menuWindow.width
+                                                color: taskbar.taskbarColor
+                                                height: menuWindow.height
+                                                radius: 8
+
+                                                border {
+                                                    color: taskbar.taskbarMidColor
+                                                    width: 2
+                                                }
+
+                                                Component {
+                                                    id: menuItemDelegate
+                                                    WrapperMouseArea {
+                                                        hoverEnabled: true
+                                                        required property var modelData
+                                                        required property int index
+                                                        implicitWidth: parent.width
+                                                        implicitHeight: 32 - (containerItem.border.width * 2)
+                                                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                                                        anchors.horizontalCenter: parent.horizontalCenter
+                                                        anchors.verticalCenter: parent.verticalCenter
+
+                                                        onClicked: function(mouse) {
+                                                            if (mouse.button & Qt.LeftButton)
+
+                                                                modelData[1]/*contextData*/.onTriggered(mouse, modelData)
+
+                                                            else menuWindow.visible = false;
+                                                        }
+
+                                                        onContainsMouseChanged: function(mouseChangedStatus) {
+                                                            console.log(this.containsMouse)
+                                                            listItemDetails.color = this.containsMouse ?  "#66FFFFFF" : "transparent"
+                                                        }
+
+
+                                                        Rectangle {
+                                                            id: listItemDetails
+                                                            color: "#00FFFFFF"
+                                                            radius: containerItem.radius / 1.25
+
+                                                            Component {
+                                                                id: potentialImage
+                                                                Image {
+                                                                }
+                                                            }
+
+                                                            Loader {
+                                                                property var itemContainsImage: Object.keys(modelData[1]/*contextData */).includes("image")
+                                                                source: itemContainsImage ? modelData[1].image : ""
+                                                                sourceComponent: itemContainsImage ? potentialImage : undefined
+                                                            }
+
+                                                            Rectangle {
+                                                                id: dotContainer
+                                                                implicitWidth: 8
+                                                                height: implicitWidth - containerItem.border.width
+                                                                radius: 40
+                                                                color: Object.keys(modelData[1]).includes("color") ? modelData[1].color : taskbar.taskbarComplimentColor
+                                                                anchors {
+                                                                    leftMargin: containerItem.border.width
+                                                                    left: parent.left
+                                                                    right: text.left
+                                                                    verticalCenter: parent.verticalCenter
+                                                                }
+                                                            }
+
+                                                            Text {
+                                                                id: text
+                                                                width: parent.width - dotContainer.implicitWidth
+                                                                height: parent.height
+                                                                anchors {
+                                                                    right: parent.right
+                                                                }
+
+                                                                verticalAlignment:Text.AlignVCenter
+                                                                leftPadding: dotContainer.implicitWidth / 2
+                                                                color: "white"
+
+                                                                font {
+                                                                    pointSize: 10
+                                                                    weight: 600
+                                                                    family: "VictorMonoNFM-Semibold"
+                                                                }
+                                                                text: {
+                                                                    const [contextId, contextData] = modelData;
+                                                                    return contextData.text
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                ScriptModel {
+                                                    id: contextModel
+                                                    property var baseMenuContexts: ({
+                                                            close_window: {
+                                                                text: "Close",
+                                                                onTriggered: function(mouse, [contextId, contextData])
+                                                                {
+                                                                    Hyprland.dispatch(`closewindow address:${modelData.lastIpcObject.address}`)
+                                                                    console.log(this.text)
+                                                                }
+                                                            }
+                                                    })
+                                                    values: {
+                                                        return Object.entries(baseMenuContexts)
+                                                    }
+                                                }
+
+                                                ListView {
+                                                    id: contextMenuListView
+                                                    width: parent.width - (parent.border.width * 2) - 8
+                                                    height: parent.height - (parent.border.width * 2) - 2
+                                                    anchors { 
+                                                        centerIn: parent
+                                                    }
+                                                    delegate: menuItemDelegate
+                                                    model: contextModel.values
+                                                }
+                                            }
+                                        }
 
                                         Tooltip {
                                             visible: hoverArea.containsMouse
@@ -581,6 +761,8 @@ ShellRoot {
                                             id: nfIcon
                                             width: 16
                                             height: 16
+                                            sourceSize.width: width
+                                            sourceSize.height: height
                                             anchors {
                                                 centerIn: parent
                                             }
@@ -693,4 +875,5 @@ ShellRoot {
             }
         }
     }
+
 }
