@@ -19,6 +19,14 @@ import QtQuick.Effects
 ShellRoot {
     id: taskbar
 
+    // Timer {
+    //     interval: 100
+    //     running: true
+    //     repeat: true
+    //
+    //     onTriggered: {
+    //     }
+    // }
 
     ScriptModel {
         id: uniqueHyprlandClients
@@ -201,6 +209,7 @@ ShellRoot {
             }
 
 
+
             Rectangle {
                 id: traySmoother
                 z: -200
@@ -213,6 +222,7 @@ ShellRoot {
                 width: trayLining.width * 0.75
                 height: parent.height / 2
             }
+
 
 
 
@@ -527,600 +537,617 @@ ShellRoot {
                         }
 
 
-                        Component {
-                            id: imageIfFound
+                        Item {
+                            Timer {
+                                property var isDisappearing: false
+                                property var appearInterval: 500
+                                property var disappearInterval: 100
 
-                            Item {
-                                Timer {
-                                    property var isDisappearing: false
-                                    property var appearInterval: 500
-                                    property var disappearInterval: 100
+                                id: hoverTimer
+                                interval: appearInterval
+                                running: false
+                                repeat: false
 
-                                    id: hoverTimer
-                                    interval: appearInterval
-                                    running: false
-                                    repeat: false
+                                onTriggered: {
+                                    console.log("ok i got you dawg")
+                                    screenPeekPopupWindow.visible = !this.isDisappearing && (!menuWindow.visible)
+                                    this.isDisappearing = !this.isDisappearing;
+                                    Hyprland.refreshToplevels();
+                                    Hyprland.refreshWorkspaces();
+                                }
+                            }
 
-                                    onTriggered: {
-                                        console.log("ok i got you dawg")
-                                        duplicateClassesPopupWindow.visible = !this.isDisappearing
-                                        this.isDisappearing = !this.isDisappearing;
-                                        Hyprland.refreshToplevels();
-                                        Hyprland.refreshWorkspaces();
-                                    }
+                            WrapperMouseArea {
+                                id: hoverArea
+                                margin: applicationsListView.itemPadding / 2
+                                hoverEnabled: true
+                                acceptedButtons: Qt.RightButton
+
+                                onEntered: {
+                                    hoverTimer.isDisappearing = false;
+                                    hoverTimer.interval = hoverTimer.appearInterval
+                                    hoverTimer.restart();
+                                    itemRect.color = "#22FFFFFF"
                                 }
 
-                                WrapperMouseArea {
-                                    id: hoverArea
-                                    margin: applicationsListView.itemPadding / 2
-                                    hoverEnabled: true
-                                    acceptedButtons: Qt.RightButton
-
-                                    onEntered: {
-                                        hoverTimer.isDisappearing = false;
-                                        hoverTimer.interval = hoverTimer.appearInterval
-                                        hoverTimer.restart();
-                                        itemRect.color = "#22FFFFFF"
-                                    }
-
-                                    onExited: {
-                                        hoverTimer.isDisappearing = true;
-                                        hoverTimer.interval = hoverTimer.disappearInterval
-                                        hoverTimer.restart();
-                                        itemRect.color = "transparent"
-                                    }
+                                onExited: {
+                                    hoverTimer.isDisappearing = true;
+                                    hoverTimer.interval = hoverTimer.disappearInterval
+                                    hoverTimer.restart();
+                                    itemRect.color = "transparent"
+                                }
 
 
-                                    Component.onCompleted: {
-                                    }
+                                Component.onCompleted: {
+                                }
 
-                                    onClicked: {
+                                onClicked: {
+                                    screenPeekPopupWindow.visible = false;
+                                    menuWindow.visible = !menuWindow.visible
+                                }
 
-                                        menuWindow.visible = !menuWindow.visible
-                                    }
 
+                                child: IconImage {
+                                    id: icon
+                                    implicitSize: applicationsListView.itemHeight - applicationsListView.itemPadding
 
-                                    child: IconImage {
-                                        id: icon
-                                        implicitSize: applicationsListView.itemHeight - applicationsListView.itemPadding
+                                    mipmap: true
+                                    source: baseImageSource
+                                    asynchronous: true
 
-                                        mipmap: true
-                                        source: baseImageSource
-                                        asynchronous: true
+                                    PopupWindow {
+                                        id: screenPeekPopupWindow
+                                        property double aspectRatio: 16/9
+                                        property double containerRectSize: 240
+                                        property double containerRectBorderSize: 3
+                                        visible: false
+                                        color: "transparent" // "#2200FF00"
+                                        /*
+                                         * I DON'T KNOW WHAT ANY OF THIS MEANS
+                                         * BUT YOU KNOW WHAT I'M TAKING IT
+                                         */
+                                        implicitWidth: 
+                                            ((containerRectSize) * (valuesModel.values.length))
+                                            + (duplicateListView.spacing * valuesModel.values.length - 1)
+                                            + (containerRectBorderSize * valuesModel.values.length)
+                                            + (backgroundRect.anchors.margins * 2)
+                                            - (3 * (Math.max(0, valuesModel.values.length - 2)))
+                                            + (valuesModel.values.length > 1 ? 0 : (duplicateListView.spacing / 2))
 
-                                        PopupWindow {
-                                            id: duplicateClassesPopupWindow
-                                            property double aspectRatio: 16/9
-                                            property double containerRectSize: 240
-                                            property double containerRectBorderSize: 3
-                                            visible: false
-                                            color: "transparent" // "#2200FF00"
-                                            /*
-                                             * I DON'T KNOW WHAT ANY OF THIS MEANS
-                                             * BUT YOU KNOW WHAT I'M TAKING IT
-                                             */
-                                            implicitWidth: 
-                                                ((containerRectSize) * (valuesModel.values.length))
-                                                + (duplicateListView.spacing * valuesModel.values.length - 1)
-                                                + (containerRectBorderSize * valuesModel.values.length)
-                                                + (backgroundRect.anchors.margins * 2)
-                                                - (3 * (Math.max(0, valuesModel.values.length - 2)))
-                                                + (valuesModel.values.length > 1 ? 0 : (duplicateListView.spacing / 2))
+                                        implicitHeight: {
 
-                                            implicitHeight: {
+                                            return 150
+                                        }
 
-                                                return 150
+                                        HoverHandler {
+                                            id: hoverHandler
+                                            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                                            onHoveredChanged: {
+                                                if (this.hovered)
+                                                {
+                                                    hoverTimer.isDisappearing = false;
+                                                    hoverTimer.stop()
+
+                                                    return;
+                                                } 
+
+                                                hoverTimer.isDisappearing = true;
+                                                hoverTimer.restart()
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            id: backgroundRect
+                                            color: taskbar.taskbarColor
+                                            border { 
+                                                width: 2
+                                                color: taskbar.taskbarComplimentColor
+                                            }
+                                            radius: 4
+                                            anchors {
+                                                top: parent.top
+                                                margins: 8
+                                                bottom: parent.bottom
+                                                left: parent.left
+                                                right: parent.right
+                                                leftMargin: 8 
                                             }
 
-                                            HoverHandler {
-                                                id: hoverHandler
-                                                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                                                onHoveredChanged: {
-                                                    if (this.hovered)
-                                                    {
-                                                        hoverTimer.isDisappearing = false;
-                                                        hoverTimer.stop()
-
-                                                        return;
-                                                    } 
-
-                                                    hoverTimer.isDisappearing = true;
-                                                    hoverTimer.restart()
-                                                }
-                                            }
-
-                                            Rectangle {
-                                                id: backgroundRect
-                                                color: taskbar.taskbarColor
-                                                border { 
-                                                    width: 2
-                                                    color: taskbar.taskbarComplimentColor
-                                                }
-                                                radius: 4
+                                            ListView {
+                                                id: duplicateListView
+                                                width: screenPeekPopupWindow.implicitWidth 
+                                                height: parent.height - parent.anchors.margins
+                                                x: parent.anchors.leftMargin / 2 
+                                                y: parent.anchors.margins / 2
                                                 anchors {
-                                                    top: parent.top
-                                                    margins: 8
-                                                    bottom: parent.bottom
-                                                    left: parent.left
-                                                    right: parent.right
-                                                    leftMargin: 8 
                                                 }
 
-                                                ListView {
-                                                    id: duplicateListView
-                                                    width: duplicateClassesPopupWindow.implicitWidth 
-                                                    height: parent.height - parent.anchors.margins
-                                                    x: parent.anchors.leftMargin / 2 
-                                                    y: parent.anchors.margins / 2
-                                                    anchors {
-                                                    }
+                                                orientation: Qt.Horizontal
+                                                delegate: screenViewItemDelegate                                           
+                                                spacing: 4
+                                                model: valuesModel
 
-                                                    orientation: Qt.Horizontal
-                                                    delegate: screenViewItemDelegate                                           
-                                                    spacing: 4
-                                                    model: valuesModel
+                                                ScriptModel {
+                                                    id: valuesModel
+                                                    values: {
+                                                        const reducedValues = 
+                                                            Hyprland.toplevels.values
+                                                                .filter(({lastIpcObject}) => lastIpcObject.class === modelData.lastIpcObject.class)
+                                                                .reduce((acc, {lastIpcObject}, k) => {
+                                                                    const {class: ipcClass, address} = lastIpcObject;
+                                                                    const stringifiedObject = JSON.stringify(lastIpcObject);
+                                                                    if (acc[ipcClass]) 
 
-                                                    ScriptModel {
-                                                        id: valuesModel
-                                                        values: {
-                                                            const reducedValues = 
-                                                                Hyprland.toplevels.values
-                                                                    .filter(({lastIpcObject}) => lastIpcObject.class === modelData.lastIpcObject.class)
-                                                                    .reduce((acc, {lastIpcObject}, k) => {
-                                                                        const {class: ipcClass, address} = lastIpcObject;
-                                                                        const stringifiedObject = JSON.stringify(lastIpcObject);
-                                                                        if (acc[ipcClass]) 
+                                                                        acc[ipcClass].push(stringifiedObject)
 
-                                                                            acc[ipcClass].push(stringifiedObject)
+                                                                    else {
+                                                                        if (address)
 
-                                                                        else {
-                                                                            if (address)
+                                                                            acc[ipcClass] = [stringifiedObject];
+                                                                    }
 
-                                                                                acc[ipcClass] = [stringifiedObject];
-                                                                        }
+                                                                    return acc;
+                                                                }, {})
 
-                                                                        return acc;
-                                                                    }, {})
-
-                                                            const all = reducedValues[modelData.lastIpcObject.class]
-                                                            const single = [all[0]];
-                                                            return all
-                                                        }
+                                                        const all = reducedValues[modelData.lastIpcObject.class]
+                                                        const single = [all[0]];
+                                                        return all
                                                     }
                                                 }
+                                            }
 
-                                                Component {
-                                                    id: screenViewItemDelegate
-                                                    WrapperMouseArea {
-                                                        id: mouseArea
-                                                        hoverEnabled: true
-                                                        required property var modelData
-                                                        required property int index
-                                                        width: duplicateClassesPopupWindow.containerRectSize
+                                            Component {
+                                                id: screenViewItemDelegate
+                                                WrapperMouseArea {
+                                                    id: mouseArea
+                                                    hoverEnabled: true
+                                                    required property var modelData
+                                                    required property int index
+                                                    width: screenPeekPopupWindow.containerRectSize
 
-                                                        Timer {
-                                                            id: showElementTimer
-                                                            interval: 250
-                                                            running: false
-                                                            repeat: false
+                                                    Timer {
+                                                        id: showElementTimer
+                                                        interval: 250
+                                                        running: false
+                                                        repeat: false
 
-                                                            property var modifiedAddresses: []
-                                                            property var workspaceSpecial: undefined
-                                                            property var workspace: undefined
-                                                            onTriggered: {
-                                                                Hyprland.refreshWorkspaces()
-                                                                if (this.workspace)
+                                                        property var modifiedAddresses: []
+                                                        property var workspaceSpecial: undefined
+                                                        property var workspaceSpecialPrev: undefined
+                                                        property var workspace: undefined
+                                                        onTriggered: {
+                                                            Hyprland.refreshWorkspaces()
+                                                            Hyprland.refreshToplevels()
+                                                            if (this.workspace)
+
+                                                                return;
+
+                                                            const specialRegex = /special:(.+)/;
+                                                            const activeWorkspace = Hyprland.focusedWorkspace;
+                                                            const currentWorkspace = JSON.parse(modelData).workspace;
+                                                            const currentSpecialWorkspaceName = 
+                                                                currentWorkspace.name.match(specialRegex)?.[1]
+
+                                                            Hyprland.toplevels.values.forEach(({lastIpcObject: e}) =>
+                                                            {
+                                                                if (!e.address)
 
                                                                     return;
 
-                                                                const activeWorkspace = Hyprland.focusedWorkspace;
-                                                                const currentWorkspace = JSON.parse(modelData).workspace;
-                                                                const currentSpecialWorkspaceName = 
-                                                                    currentWorkspace.name.match(/special:(.+)/)?.[1]
-
-                                                                Hyprland.toplevels.values.forEach(({lastIpcObject: e}) =>
+                                                                if (e.address != JSON.parse(modelData).address)
                                                                 {
-                                                                    if (e.address != JSON.parse(modelData).address)
-                                                                    {
-                                                                        modifiedAddresses.push(e.address);
-                                                                        ["", "inactive", "fullscreen"].forEach((alphaItem) =>
-                                                                        {
-                                                                            Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem}override 1`)
-                                                                            Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem} 0`)
-                                                                        })
-                                                                    }
-
-
-                                                                })
-
-                                                                const mainToplevel = Hyprland.workspaces.values.find((e) => e.name === Hyprland.activeToplevel?.workspace?.name)
-                                                                if (currentSpecialWorkspaceName)
-                                                                {
-                                                                    if (mainToplevel.name !== currentWorkspace.name)
-                                                                    {
-                                                                        this.workspaceSpecial = currentSpecialWorkspaceName;
-                                                                        Hyprland.dispatch(`togglespecialworkspace ${currentSpecialWorkspaceName}`)
-                                                                    }
-                                                                } 
-                                                                else if (activeWorkspace)
-                                                                {
-                                                                    // check to see if the target
-                                                                    // workspace is on the current 
-                                                                    // face monitors...
-                                                                    const targetWorkspace = Hyprland.workspaces.values.find((e) => 
-                                                                    {
-                                                                        return e.name.toString() === currentWorkspace.name.toString()
-                                                                    })
-
-                                                                    if (targetWorkspace && !targetWorkspace.active)
-                                                                    {
-                                                                        this.workspace = activeWorkspace.name
-                                                                        targetWorkspace.activate()
-                                                                    }
-                                                                }
-
-
-
-                                                                // console.log(`hovered for over ${(this.interval / 1000).toString().substring(0, 4)} seconds`)
-                                                            }
-
-                                                            onRunningChanged: {
-                                                            }
-                                                        }
-
-                                                        property var didClick: false
-                                                        onClicked: {
-                                                            this.didClick = true;
-
-                                                            const parsedModelData = JSON.parse(modelData);
-                                                            const currentWorkspace = parsedModelData.workspace;
-                                                            const foundMatchingWorkspace = Hyprland.workspaces.values.find((e) => e.name === currentWorkspace?.name);
-                                                            Hyprland.dispatch(`movetoworkspace ${Hyprland.focusedMonitor.activeWorkspace.name},address:${parsedModelData.address}`)
-                                                            Hyprland.dispatch(`focuswindow address:${parsedModelData.address}`)
-                                                            Hyprland.refreshToplevels();
-                                                            Hyprland.refreshWorkspaces();
-                                                            showElementTimer.stop();
-                                                        }
-
-                                                        onContainsMouseChanged: {
-                                                            if (this.containsMouse)
-                                                            {
-                                                                showElementTimer.restart()
-                                                            } 
-                                                            else 
-                                                            {
-
-                                                                ["", "inactive", "fullscreen"].forEach((alphaItem) =>
-                                                                {
-                                                                    Hyprland.toplevels.values.filter((e) => e?.lastIpcObject?.address).forEach(({lastIpcObject: e}) =>
+                                                                    modifiedAddresses.push(e.address);
+                                                                    ["", "inactive", "fullscreen"].forEach((alphaItem) =>
                                                                     {
                                                                         Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem}override 1`)
-                                                                        Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem} 1`)
-                                                                        Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem}override 0`)
+                                                                        Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem} 0`)
                                                                     })
-                                                                })
-
-                                                                if (showElementTimer.running)
-
-                                                                    showElementTimer.stop()
-
-                                                                if (showElementTimer.workspaceSpecial && !this.didClick)
-                                                                {
-                                                                    Hyprland.dispatch(`togglespecialworkspace ${showElementTimer.workspaceSpecial}`)
-                                                                } 
-                                                                else if (showElementTimer.workspace)
-                                                                {
-                                                                    const previousWorkspace = Hyprland.workspaces.values.find((e) => e.name == showElementTimer.workspace)
-                                                                    if (previousWorkspace)
-
-                                                                        previousWorkspace.activate()
                                                                 }
 
+                                                            })
 
+                                                            const mainToplevel = 
+                                                                Hyprland.workspaces.values.find((e) => e.name === Hyprland.activeToplevel?.workspace?.name)
 
-                                                                // clear old arr
-                                                                showElementTimer.modifiedAddresses = []
-                                                                showElementTimer.workspaceSpecial = undefined;
-                                                                showElementTimer.workspace = undefined;
-                                                                this.didClick = false;
+                                                            const currentActiveWorkspace = Hyprland.toplevels.values.find((e) => e.activated)?.workspace?.name.match(specialRegex)?.[0]
+                                                            console.log(currentActiveWorkspace, mainToplevel.name, currentWorkspace.name)
+                                                            if (currentActiveWorkspace)
+                                                            {
+                                                                console.log("I GOT YOU.")
+                                                                this.workspaceSpecialPrev = currentActiveWorkspace
                                                             }
-                                                            console.log(this.containsMouse)
+
+
+                                                            if (currentSpecialWorkspaceName)
+                                                            {
+                                                                if (mainToplevel.name !== currentWorkspace.name)
+                                                                {
+
+                                                                    this.workspaceSpecial = currentSpecialWorkspaceName;
+                                                                    Hyprland.dispatch(`togglespecialworkspace ${currentSpecialWorkspaceName}`)
+                                                                }
+                                                            } 
+                                                            else if (activeWorkspace)
+                                                            {
+                                                                // check to see if the target
+                                                                // workspace is on the current 
+                                                                // face monitors...
+                                                                const targetWorkspace = Hyprland.workspaces.values.find((e) => 
+                                                                {
+                                                                    return e.name.toString() === currentWorkspace.name.toString()
+                                                                })
+
+                                                                if (targetWorkspace && !targetWorkspace.active)
+                                                                {
+                                                                    this.workspace = activeWorkspace.name
+                                                                    targetWorkspace.activate()
+                                                                }
+                                                            }
                                                         }
+
+                                                        onRunningChanged: {
+                                                        }
+                                                    }
+
+                                                    property var didClick: false
+                                                    onClicked: {
+                                                        this.didClick = true;
+
+                                                        const parsedModelData = JSON.parse(modelData);
+                                                        const currentWorkspace = parsedModelData.workspace;
+                                                        const foundMatchingWorkspace = Hyprland.workspaces.values.find((e) => e.name === currentWorkspace?.name);
+                                                        Hyprland.dispatch(`movetoworkspace ${Hyprland.focusedMonitor.activeWorkspace.name},address:${parsedModelData.address}`)
+                                                        Hyprland.dispatch(`focuswindow address:${parsedModelData.address}`)
+                                                        Hyprland.refreshToplevels();
+                                                        Hyprland.refreshWorkspaces();
+                                                        showElementTimer.stop();
+                                                    }
+
+                                                    onContainsMouseChanged: {
+                                                        if (this.containsMouse)
+                                                        {
+                                                            showElementTimer.restart()
+                                                        } 
+                                                        else 
+                                                        {
+
+                                                            ["", "inactive", "fullscreen"].forEach((alphaItem) =>
+                                                            {
+                                                                Hyprland.toplevels.values.filter((e) => e?.lastIpcObject?.address).forEach(({lastIpcObject: e}) =>
+                                                                {
+                                                                    Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem}override 1`)
+                                                                    Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem} 1`)
+                                                                    Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem}override 0`)
+                                                                })
+                                                            })
+
+                                                            if (showElementTimer.running)
+
+                                                                showElementTimer.stop()
+
+                                                            if (showElementTimer.workspaceSpecial && !this.didClick)
+                                                            {
+                                                                if (!showElementTimer.workspaceSpecialPrev)
+
+                                                                    Hyprland.dispatch(`togglespecialworkspace ${showElementTimer.workspaceSpecial}`)
+
+                                                                else 
+                                                                {
+                                                                    console.log("found prev.")
+                                                                    Hyprland.dispatch(`workspace ${showElementTimer.workspaceSpecialPrev}`)
+                                                                }
+                                                            } 
+                                                            else if (showElementTimer.workspace)
+                                                            {
+                                                                const previousWorkspace = Hyprland.workspaces.values.find((e) => e.name == showElementTimer.workspace)
+                                                                if (previousWorkspace)
+
+                                                                    previousWorkspace.activate()
+                                                            }
+
+                                                            // clear old arr
+                                                            showElementTimer.modifiedAddresses = []
+                                                            showElementTimer.workspaceSpecial = undefined;
+                                                            showElementTimer.workspace = undefined;
+                                                            showElementTimer.workspaceSpecialPrev = undefined;
+                                                            this.didClick = false;
+                                                        }
+                                                        console.log(this.containsMouse)
+                                                    }
+
+                                                    anchors {
+                                                        top: parent ? parent.top : undefined
+                                                        bottom: parent ? parent.bottom : undefined
+                                                    }
+                                                    Rectangle {
+                                                        id: containerRect
+                                                        color: "transparent"
+                                                        clip: {
+                                                            // console.log(modelData)
+                                                            return true;
+                                                        }
+
+                                                        border {
+                                                            width: screenPeekPopupWindow.containerRectBorderSize
+                                                            color: taskbar.taskbarComplimentColor
+                                                        }
+
+                                                        radius: 2
+
+                                                        width: parent.width
 
                                                         anchors {
                                                             top: parent ? parent.top : undefined
                                                             bottom: parent ? parent.bottom : undefined
                                                         }
-                                                        Rectangle {
-                                                            id: containerRect
-                                                            color: "transparent"
-                                                            clip: {
-                                                                // console.log(modelData)
-                                                                return true;
+
+                                                        /**
+                                                         * i had to do some weird bullhonkey
+                                                         * because some windows have different
+                                                         * ratios (for some reason?) 
+                                                         *
+                                                         * so, i opted to just tuck the screencopy
+                                                         * underneath the rectangle overlay. this also
+                                                         * allows me to comfortably have a border
+                                                         * radius as a result! this is cool.
+                                                         */
+                                                        ScreencopyView {
+                                                            id: sourceItem
+                                                            z: -1
+                                                            visible: true
+                                                            live: true
+                                                            captureSource: {
+                                                                const E = Hyprland.toplevels.values.find((e) => e.lastIpcObject.address === JSON.parse(modelData).address)
+                                                                return E?.wayland ?? null
                                                             }
 
-                                                            border {
-                                                                width: duplicateClassesPopupWindow.containerRectBorderSize
-                                                                color: taskbar.taskbarComplimentColor
+                                                            paintCursor: false
+
+
+                                                            width: screenPeekPopupWindow.containerRectSize - containerRect.border.width
+                                                            height: parent.height - containerRect.border.width
+                                                            constraintSize {
+                                                                width: screenPeekPopupWindow.containerRectSize
+                                                                height: parent.height
                                                             }
-
-                                                            radius: 2
-
-                                                            width: parent.width
 
                                                             anchors {
-                                                                top: parent ? parent.top : undefined
-                                                                bottom: parent ? parent.bottom : undefined
-                                                            }
-
-                                                            /**
-                                                             * i had to do some weird bullhonkey
-                                                             * because some windows have different
-                                                             * ratios (for some reason?) 
-                                                             *
-                                                             * so, i opted to just tuck the screencopy
-                                                             * underneath the rectangle overlay. this also
-                                                             * allows me to comfortably have a border
-                                                             * radius as a result! this is cool.
-                                                             */
-                                                            ScreencopyView {
-                                                                id: sourceItem
-                                                                z: -1
-                                                                visible: true
-                                                                live: true
-                                                                captureSource: {
-                                                                    const E = Hyprland.toplevels.values.find((e) => e.lastIpcObject.address === JSON.parse(modelData).address)
-                                                                    return E?.wayland ?? null
-                                                                }
-
-                                                                paintCursor: false
-
-
-                                                                width: duplicateClassesPopupWindow.containerRectSize - containerRect.border.width
-                                                                height: parent.height - containerRect.border.width
-                                                                constraintSize {
-                                                                    width: duplicateClassesPopupWindow.containerRectSize
-                                                                    height: parent.height
-                                                                }
-
-                                                                anchors {
-                                                                    top: parent.top
-                                                                    bottom: parent.bottom
-                                                                    left: parent.left
-                                                                    right: parent.right
-                                                                    // divide by 2 because... duh?
-                                                                    // its essentially positioned halfway 
-                                                                    // in the inside border
-                                                                    centerIn: parent
-                                                                }
-                                                            }
-
-                                                            Rectangle {
-                                                                width: parent.width
-                                                                height: 32
-                                                                color: `#${mouseArea.containsMouse ? "99" : "00"}${taskbar.taskbarComplimentColor.substring(1)}`
-                                                                anchors {
-                                                                    top: parent.top
-                                                                    bottom: parent.bottom
-                                                                    horizontalCenter: parent.horizontalCenter
-                                                                }
-
-                                                                Rectangle {
-                                                                    id: coverBorder
-                                                                    width: nameText.contentWidth + 12
-                                                                    color: taskbar.taskbarMidColor
-                                                                    height: nameText.contentHeight
-                                                                    radius: 4
-                                                                    opacity: 0.7
-
-                                                                    anchors {
-                                                                        bottom: parent.bottom
-                                                                        horizontalCenter: parent.horizontalCenter
-                                                                        bottomMargin: 8
-                                                                    }
-
-                                                                    border {
-                                                                        width: 2
-                                                                        color: taskbar.taskbarComplimentColor
-                                                                    }
-
-
-                                                                    Text {
-                                                                        color: "white"
-                                                                        id: nameText
-                                                                        width: sourceItem.width - 24
-                                                                        wrapMode: Text.Wrap;
-                                                                        horizontalAlignment: Text.AlignHCenter
-                                                                        verticalAlignment: Text.AlignVCenter
-                                                                        text: {
-                                                                            return JSON.parse(modelData).title
-                                                                        }
-
-                                                                        anchors {
-                                                                            centerIn: parent
-                                                                        }
-
-                                                                        font {
-                                                                            weight: 600
-                                                                        }
-                                                                    }
-                                                                }
+                                                                top: parent.top
+                                                                bottom: parent.bottom
+                                                                left: parent.left
+                                                                right: parent.right
+                                                                // divide by 2 because... duh?
+                                                                // its essentially positioned halfway 
+                                                                // in the inside border
+                                                                centerIn: parent
                                                             }
                                                         }
-                                                    }
-                                                }
-                                            }
-
-                                            anchor {
-                                                item: icon
-                                                edges: Edges.Top
-                                                rect {
-                                                    y: -height
-                                                    x: -(width - (lView.spacing * 2 )) / 2 + (icon.width / 2) - lView.spacing
-                                                }
-                                            }
-                                        }
-
-                                        PopupWindow {
-                                            id: menuWindow
-                                            visible: false
-                                            color: "transparent"
-                                            implicitWidth: 160
-                                            implicitHeight: 32 * contextModel.values.length
-
-
-
-                                            anchor {
-                                                item: icon
-                                                edges: Edges.Top
-                                                rect {
-                                                    y: -height
-                                                    x: -(width - (lView.spacing * 2 )) / 2 + (icon.width / 2) - lView.spacing
-                                                }
-                                            }
-
-                                            Rectangle {
-                                                id: containerItem
-                                                width: menuWindow.width
-                                                color: taskbar.taskbarColor
-                                                height: menuWindow.height
-                                                radius: 8
-
-                                                border {
-                                                    color: taskbar.taskbarMidColor
-                                                    width: 2
-                                                }
-
-                                                Component {
-                                                    id: menuItemDelegate
-                                                    WrapperMouseArea {
-                                                        hoverEnabled: true
-                                                        required property var modelData
-                                                        required property int index
-                                                        implicitWidth: parent.width
-                                                        implicitHeight: 32 - (containerItem.border.width * 2)
-                                                        acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-                                                        anchors.horizontalCenter: parent.horizontalCenter
-                                                        anchors.verticalCenter: parent.verticalCenter
-
-                                                        onClicked: function(mouse) {
-                                                            if (mouse.button & Qt.LeftButton)
-
-                                                                modelData[1]/*contextData*/.onTriggered(mouse, modelData)
-
-                                                            else menuWindow.visible = false;
-                                                        }
-
-                                                        onContainsMouseChanged: function(mouseChangedStatus) {
-                                                            listItemDetails.color = this.containsMouse ?  "#66FFFFFF" : "transparent"
-                                                        }
-
 
                                                         Rectangle {
-                                                            id: listItemDetails
-                                                            color: "#00FFFFFF"
-                                                            radius: containerItem.radius / 1.25
-
-                                                            Component {
-                                                                id: potentialImage
-                                                                Image {
-                                                                }
-                                                            }
-
-                                                            Loader {
-                                                                property var itemContainsImage: Object.keys(modelData[1]/*contextData */).includes("image")
-                                                                source: itemContainsImage ? modelData[1].image : ""
-                                                                sourceComponent: itemContainsImage ? potentialImage : undefined
+                                                            width: parent.width
+                                                            height: 32
+                                                            color: `#${mouseArea.containsMouse ? "99" : "00"}${taskbar.taskbarComplimentColor.substring(1)}`
+                                                            anchors {
+                                                                top: parent.top
+                                                                bottom: parent.bottom
+                                                                horizontalCenter: parent.horizontalCenter
                                                             }
 
                                                             Rectangle {
-                                                                id: dotContainer
-                                                                implicitWidth: 8
-                                                                height: implicitWidth - containerItem.border.width
-                                                                radius: 40
-                                                                color: Object.keys(modelData[1]).includes("color") ? modelData[1].color : taskbar.taskbarComplimentColor
+                                                                id: coverBorder
+                                                                width: nameText.contentWidth + 12
+                                                                color: taskbar.taskbarMidColor
+                                                                height: nameText.contentHeight
+                                                                radius: 4
+                                                                opacity: 0.7
+
                                                                 anchors {
-                                                                    leftMargin: containerItem.border.width
-                                                                    left: parent.left
-                                                                    right: text.left
-                                                                    verticalCenter: parent.verticalCenter
-                                                                }
-                                                            }
-
-                                                            Text {
-                                                                id: text
-                                                                width: parent.width - dotContainer.implicitWidth
-                                                                height: parent.height
-                                                                anchors {
-                                                                    right: parent.right
+                                                                    bottom: parent.bottom
+                                                                    horizontalCenter: parent.horizontalCenter
+                                                                    bottomMargin: 8
                                                                 }
 
-                                                                verticalAlignment:Text.AlignVCenter
-                                                                leftPadding: dotContainer.implicitWidth / 2
-                                                                color: "white"
-
-                                                                font {
-                                                                    pointSize: 10
-                                                                    weight: 600
-                                                                    family: "VictorMonoNFM-Semibold"
+                                                                border {
+                                                                    width: 2
+                                                                    color: taskbar.taskbarComplimentColor
                                                                 }
-                                                                text: {
-                                                                    const [contextId, contextData] = modelData;
-                                                                    return contextData.text
+
+
+                                                                Text {
+                                                                    color: "white"
+                                                                    id: nameText
+                                                                    width: sourceItem.width - 24
+                                                                    wrapMode: Text.Wrap;
+                                                                    horizontalAlignment: Text.AlignHCenter
+                                                                    verticalAlignment: Text.AlignVCenter
+                                                                    text: {
+                                                                        return JSON.parse(modelData).title
+                                                                    }
+
+                                                                    anchors {
+                                                                        centerIn: parent
+                                                                    }
+
+                                                                    font {
+                                                                        weight: 600
+                                                                    }
                                                                 }
                                                             }
                                                         }
                                                     }
                                                 }
+                                            }
+                                        }
 
-                                                ScriptModel {
-                                                    id: contextModel
-                                                    property var baseMenuContexts: ({
-                                                            close_window: {
-                                                                text: "Close",
-                                                                onTriggered: function(mouse, [contextId, contextData])
-                                                                {
-                                                                    Hyprland.dispatch(`closewindow address:${modelData.lastIpcObject.address}`)
-                                                                }
+                                        anchor {
+                                            item: icon
+                                            edges: Edges.Top
+                                            rect {
+                                                y: -height
+                                                x: -(width - (lView.spacing * 2 )) / 2 + (icon.width / 2) - lView.spacing
+                                            }
+                                        }
+                                    }
+
+                                    PopupWindow {
+                                        id: menuWindow
+                                        visible: false
+                                        color: "transparent"
+                                        implicitWidth: 160
+                                        implicitHeight: 32 * contextModel.values.length
+
+
+
+                                        anchor {
+                                            item: icon
+                                            edges: Edges.Top
+                                            rect {
+                                                y: -height
+                                                x: -(width - (lView.spacing * 2 )) / 2 + (icon.width / 2) - lView.spacing
+                                            }
+                                        }
+
+                                        Rectangle {
+                                            id: containerItem
+                                            width: menuWindow.width
+                                            color: taskbar.taskbarColor
+                                            height: menuWindow.height
+                                            radius: 8
+
+                                            border {
+                                                color: taskbar.taskbarMidColor
+                                                width: 2
+                                            }
+
+                                            Component {
+                                                id: menuItemDelegate
+                                                WrapperMouseArea {
+                                                    hoverEnabled: true
+                                                    required property var modelData
+                                                    required property int index
+                                                    implicitWidth: parent.width
+                                                    implicitHeight: 32 - (containerItem.border.width * 2)
+                                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+                                                    anchors.horizontalCenter: parent.horizontalCenter
+                                                    anchors.verticalCenter: parent.verticalCenter
+
+                                                    onClicked: function(mouse) {
+                                                        if (mouse.button & Qt.LeftButton)
+
+                                                            modelData[1]/*contextData*/.onTriggered(mouse, modelData)
+
+                                                        else menuWindow.visible = false;
+                                                    }
+
+                                                    onContainsMouseChanged: function(mouseChangedStatus) {
+                                                        listItemDetails.color = this.containsMouse ?  "#66FFFFFF" : "transparent"
+                                                    }
+
+
+                                                    Rectangle {
+                                                        id: listItemDetails
+                                                        color: "#00FFFFFF"
+                                                        radius: containerItem.radius / 1.25
+
+                                                        Component {
+                                                            id: potentialImage
+                                                            Image {
                                                             }
-                                                    })
-                                                    values: {
-                                                        return Object.entries(baseMenuContexts)
+                                                        }
+
+                                                        Loader {
+                                                            property var itemContainsImage: Object.keys(modelData[1]/*contextData */).includes("image")
+                                                            source: itemContainsImage ? modelData[1].image : ""
+                                                            sourceComponent: itemContainsImage ? potentialImage : undefined
+                                                        }
+
+                                                        Rectangle {
+                                                            id: dotContainer
+                                                            implicitWidth: 8
+                                                            height: implicitWidth - containerItem.border.width
+                                                            radius: 40
+                                                            color: Object.keys(modelData[1]).includes("color") ? modelData[1].color : taskbar.taskbarComplimentColor
+                                                            anchors {
+                                                                leftMargin: containerItem.border.width
+                                                                left: parent.left
+                                                                right: text.left
+                                                                verticalCenter: parent.verticalCenter
+                                                            }
+                                                        }
+
+                                                        Text {
+                                                            id: text
+                                                            width: parent.width - dotContainer.implicitWidth
+                                                            height: parent.height
+                                                            anchors {
+                                                                right: parent.right
+                                                            }
+
+                                                            verticalAlignment:Text.AlignVCenter
+                                                            leftPadding: dotContainer.implicitWidth / 2
+                                                            color: "white"
+
+                                                            font {
+                                                                pointSize: 10
+                                                                weight: 600
+                                                                family: "VictorMonoNFM-Semibold"
+                                                            }
+                                                            text: {
+                                                                const [contextId, contextData] = modelData;
+                                                                return contextData.text
+                                                            }
+                                                        }
                                                     }
                                                 }
+                                            }
 
-                                                ListView {
-                                                    id: contextMenuListView
-                                                    width: parent.width - (parent.border.width * 2) - 8
-                                                    height: parent.height - (parent.border.width * 2) - 2
-                                                    anchors { 
-                                                        centerIn: parent
-                                                    }
-                                                    delegate: menuItemDelegate
-                                                    model: contextModel.values
+                                            ScriptModel {
+                                                id: contextModel
+                                                property var baseMenuContexts: ({
+                                                        close_window: {
+                                                            text: "Close",
+                                                            onTriggered: function(mouse, [contextId, contextData])
+                                                            {
+                                                                Hyprland.dispatch(`closewindow address:${modelData.lastIpcObject.address}`)
+                                                            }
+                                                        }
+                                                })
+                                                values: {
+                                                    return Object.entries(baseMenuContexts)
                                                 }
                                             }
-                                        }
 
-                                        Tooltip {
-                                            visible: hoverArea.containsMouse
-                                            text: 
-                                                (modelData.lastIpcObject.class.includes(".") ? modelData.lastIpcObject.title : modelData.lastIpcObject.class.match(/^\w+/)[0]).replace(/[^]/, (e) => e.toUpperCase())
-
-                                            horizontalAlignment: Text.AlignHCenter
-                                            leftPadding: 2
-                                            rightPadding: 2
-
-                                            anchor {
-                                                item: icon
-                                                rect.y: -icon.implicitSize
-                                                rect.x: (icon.implicitSize / 2) - (this.width / 2)
+                                            ListView {
+                                                id: contextMenuListView
+                                                width: parent.width - (parent.border.width * 2) - 8
+                                                height: parent.height - (parent.border.width * 2) - 2
+                                                anchors { 
+                                                    centerIn: parent
+                                                }
+                                                delegate: menuItemDelegate
+                                                model: contextModel.values
                                             }
-
-                                            opacity: 1
-                                            backgroundColor: "#44FFFFFF"
                                         }
+                                    }
+
+                                    Tooltip {
+                                        visible: hoverArea.containsMouse
+                                        text: 
+                                            (modelData.lastIpcObject.class.includes(".") ? modelData.lastIpcObject.title : modelData.lastIpcObject.class.match(/^\w+/)[0]).replace(/[^]/, (e) => e.toUpperCase())
+
+                                        horizontalAlignment: Text.AlignHCenter
+                                        leftPadding: 2
+                                        rightPadding: 2
+
+                                        anchor {
+                                            item: icon
+                                            rect.y: -icon.implicitSize
+                                            rect.x: (icon.implicitSize / 2) - (this.width / 2)
+                                        }
+
+                                        opacity: 1
+                                        backgroundColor: "#44FFFFFF"
                                     }
                                 }
                             }
@@ -1129,82 +1156,6 @@ ShellRoot {
                         // TODO: add rounded greyish-line underneath elements 
                         // when they are opened, and a 4px.-ish dot if they're unopened but hovered
 
-                        Component {
-                            id: imageIfNotFound
-
-
-                            Item {
-
-                                WrapperMouseArea {
-                                    id: hoverArea2
-                                    implicitWidth: 32
-                                    implicitHeight: 32
-                                    hoverEnabled: true
-
-                                    ElapsedTimer {
-                                        id: hoverElapsedTime
-                                    }
-
-                                    Component.onCompleted: {
-                                        itemRect.color = "#22FFFFFF"
-                                    }
-
-                                    onEntered: {
-                                        hoverElapsedTime.restart()
-                                        itemRect.color = "#FFFFFFFF"
-                                    }
-
-                                    onExited: {
-                                        itemRect.color = "#22FFFFFF"
-                                    }
-
-                                    Tooltip {
-                                        visible: hoverArea2.containsMouse
-                                        text: 
-                                            (modelData.lastIpcObject.class.includes(".") ? modelData.lastIpcObject.title : modelData.lastIpcObject.class.match(/^(\w|\s)+/)[0]).replace(/[^]/, (e) => e.toUpperCase())
-
-                                        horizontalAlignment: Text.AlignHCenter
-                                        leftPadding: 2
-                                        rightPadding: 2
-
-                                        anchor {
-                                            item: nfIconC
-                                            rect.y: (-nfIcon.height * 2) + applicationsListView.itemPadding
-                                            rect.x: (nfIconC.width / 2) - (this.width / 2) 
-                                        }
-
-                                        opacity: 1
-                                        backgroundColor: "#44FFFFFF"
-                                    }
-
-                                    Rectangle {
-                                        id: nfIconC
-                                        width: 16
-                                        height: 16
-                                        color: "transparent"
-
-                                        Image {
-                                            id: nfIcon
-                                            width: 16
-                                            height: 16
-                                            sourceSize.width: width
-                                            sourceSize.height: height
-                                            anchors {
-                                                centerIn: parent
-                                            }
-
-                                            source: `./assets/question-solid.svg`
-
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Loader {
-                            id: imageLoader
-                            sourceComponent: baseImageSource ? imageIfFound : imageIfNotFound
-                        }
                     }
                 }
 
