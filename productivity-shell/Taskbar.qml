@@ -220,7 +220,7 @@ ShellRoot {
                 id: lView
                 property int itemWidth: 32
                 property int imagePadding: 8;
-                implicitWidth: SystemTray.items.values.length * itemWidth
+                implicitWidth: (SystemTray.items.values.length + 1) * (itemWidth) + (spacing * Math.max(0, SystemTray.items.values.length - 1))
                 implicitHeight: 32
 
                 spacing: 2
@@ -322,7 +322,7 @@ ShellRoot {
 
                     color: taskbar.taskbarColor
 
-                    width: lView.width + (lView.spacing * lView.model.values.length) + lView.itemWidth / (lView.model.values.length > 1 ? 2 : 1)
+                    width: lView.width + (lView.spacing * (lView.model.values.length + 1)) + lView.itemWidth / (lView.model.values.length > 1 ? 2 : 1)
                     height: taskbarContainer.height
 
                     anchors {
@@ -406,6 +406,64 @@ ShellRoot {
 
                 delegate: delegate
             }
+
+            Button {
+                id: chevronButton
+                height: lView.itemWidth
+                width: height
+
+                background: Rectangle {
+                    id: chevronContainer
+                    color: {
+                        console.log(parent.width, parent.height)
+                        return `#CC${taskbar.taskbarMidColor.substring(1)}`
+                    }
+
+                    radius: 8
+                    anchors {
+                        centerIn: parent
+                    }
+
+                    border {
+                        width: 2
+                        color: `${chevronContainer.color.toString().substring(0,3)}${taskbar.taskbarComplimentColor.substring(1)}`
+                    }
+                }
+
+
+                anchors {
+                    verticalCenter: lView.verticalCenter
+                    left: lView.right
+                    leftMargin: -this.width + (lView.model.length > 0 ? lView.spacing : 0)
+                }
+
+                icon {
+                    source: "file:assets/chevron-up-solid.svg"
+                    cache: false
+                    color: `#${this.hovered ? "FF" : "88"}FFFFFF`
+
+                    name: "chevron-up-solid"
+                    // danilo_jn my beloved (https://forum.qt.io/post/792071)
+                }
+
+                Tooltip {
+                    visible: chevronButton.hovered
+                    text: "More Tray Items..."
+
+                    horizontalAlignment: Text.AlignHCenter
+                    leftPadding: 2
+                    rightPadding: 2
+
+                    anchor {
+                        item: chevronButton
+                        rect.y: -chevronButton.height / 1.5
+                        rect.x: (chevronButton.width / 2) - (this.width / 2)
+                    }
+
+                    opacity: 1
+                    backgroundColor: "#44FFFFFF"
+                }
+            }
         }
 
         PanelWindow {
@@ -456,7 +514,7 @@ ShellRoot {
 
                             // console.log(`out url for ${lastIpcObject.initialClass} - '${modelData.title}' (${modelData.lastIpcObject.address}): ${outUrl} (${Quickshell.iconPath("kde.discover", true)})`)
 
-                            return outUrl ?? ""
+                            return outUrl ?? Quickshell.iconPath("default")
                         }
 
                         color: "transparent"
