@@ -8,23 +8,36 @@
  * bottom bar is dedicated for apps and system tray things
  */
 
+/*
+ * TODO: add mechanism that swaps back to your original special/normal
+ * workspace by checking the Hyprland.activeToplevel.workspace?.name
+ * and then checking if it contains the 'special' regex. if it does,
+ * then 'togglespecialwindow' back to the primary. otherwise, use
+ * 'moveworkspacetomonitor'
+ */
+
 import Quickshell // for PanelWindows
 import Quickshell.Widgets // for IconImages
 import Quickshell.Services.SystemTray // for SysTray Support
 import Quickshell.Hyprland // for Hyprland IPC
+import Quickshell.Wayland // for Hyprland IPC
 import QtQuick // for Texts
 import QtQuick.Shapes // for Shapes
 import QtQuick.Controls // for Shapes
+import QtQuick.Effects
 
 ShellRoot {
     id: taskbar
 
+
     ScriptModel {
         id: uniqueHyprlandClients
-        values: Hyprland.toplevels.values
-            .filter((e,k,arr) => arr.findIndex((f) => f.lastIpcObject.class === e.lastIpcObject.class) === k)
-            .filter((e) => e.lastIpcObject.address)
-            .filter((e) => e.lastIpcObject.initialClass && e.lastIpcObject.class && e.lastIpcObject.address)
+        values: {
+            return Hyprland.toplevels.values
+                .filter((e,k,arr) => arr.findIndex((f) => f.lastIpcObject.class === e.lastIpcObject.class) === k)
+                .filter((e) => e.lastIpcObject.address)
+                .filter((e) => e.lastIpcObject.initialClass && e.lastIpcObject.class && e.lastIpcObject.address)
+        }
     }
 
     property alias exclusiveZone: taskbarOuter.exclusiveZone
@@ -196,7 +209,6 @@ ShellRoot {
             margins {
                 right: waveyLineRight.width
             }
-
 
 
             Rectangle {
@@ -471,6 +483,24 @@ ShellRoot {
                             id: imageIfFound
 
                             Item {
+                                Timer {
+                                    property var isDisappearing: false
+                                    property var appearInterval: 500
+                                    property var disappearInterval: 100
+
+                                    id: hoverTimer
+                                    interval: appearInterval
+                                    running: false
+                                    repeat: false
+
+                                    onTriggered: {
+                                        console.log("ok i got you dawg")
+                                        duplicateClassesPopupWindow.visible = !this.isDisappearing
+                                        this.isDisappearing = !this.isDisappearing;
+                                        Hyprland.refreshToplevels();
+                                        Hyprland.refreshWorkspaces();
+                                    }
+                                }
 
                                 WrapperMouseArea {
                                     id: hoverArea
@@ -478,48 +508,23 @@ ShellRoot {
                                     hoverEnabled: true
                                     acceptedButtons: Qt.RightButton
 
-
-                                    ElapsedTimer {
-                                        id: hoverElapsedTime
-                                    }
-
                                     onEntered: {
-                                        hoverElapsedTime.restart()
+                                        hoverTimer.isDisappearing = false;
+                                        hoverTimer.interval = hoverTimer.appearInterval
+                                        hoverTimer.restart();
                                         itemRect.color = "#22FFFFFF"
                                     }
 
                                     onExited: {
+                                        hoverTimer.isDisappearing = true;
+                                        hoverTimer.interval = hoverTimer.disappearInterval
+                                        hoverTimer.restart();
                                         itemRect.color = "transparent"
                                     }
 
 
                                     Component.onCompleted: {
-                                        console.log(DesktopEntries.applications.values[0].actions)
                                     }
-
-                                    // QsMenuAnchor {
-                                    //     id: menuAnchor
-                                    //     menu: modelData.menu
-                                    //     anchor {
-                                    //         item: icon
-                                    //         rect {
-                                    //             y: -icon.height - (icon.height / 4)
-                                    //             x: -(icon.width * 2) - (lView.spacing)
-                                    //         }
-                                    //     }
-                                    // }
-
-                                    // Region { 
-                                    //     id: clickedRegion
-                                    //     item: itemRect
-                                    //     intersection: Intersection.Combine
-                                    //
-                                    //     Region {
-                                    //         item: maskMouseArea
-                                    //         intersection: Intersection.Xor
-                                    //     }
-                                    // }
-                                    
 
                                     onClicked: {
 
@@ -535,6 +540,370 @@ ShellRoot {
                                         source: baseImageSource
                                         asynchronous: true
 
+                                        PopupWindow {
+                                            id: duplicateClassesPopupWindow
+                                            property double aspectRatio: 16/9
+                                            property double containerRectSize: 240
+                                            property double containerRectBorderSize: 3
+                                            visible: false
+                                            color: "transparent" // "#2200FF00"
+                                            /*
+                                             * I DON'T KNOW WHAT ANY OF THIS MEANS
+                                             * BUT YOU KNOW WHAT I'M TAKING IT
+                                             */
+                                            implicitWidth: 
+                                                ((containerRectSize) * (valuesModel.values.length))
+                                                + (duplicateListView.spacing * valuesModel.values.length - 1)
+                                                + (containerRectBorderSize * valuesModel.values.length)
+                                                + (backgroundRect.anchors.margins * 2)
+                                                - (3 * (Math.max(0, valuesModel.values.length - 2)))
+                                                + (valuesModel.values.length > 1 ? 0 : (duplicateListView.spacing / 2))
+
+                                            implicitHeight: {
+
+                                                return 150
+                                            }
+
+                                            HoverHandler {
+                                                id: hoverHandler
+                                                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                                                onHoveredChanged: {
+                                                    if (this.hovered)
+                                                    {
+                                                        hoverTimer.isDisappearing = false;
+                                                        hoverTimer.stop()
+
+                                                        return;
+                                                    } 
+
+                                                    hoverTimer.isDisappearing = true;
+                                                    hoverTimer.restart()
+                                                }
+                                            }
+
+                                            // WrapperMouseArea {
+                                            //     z: 400
+                                            //     hoverEnabled: true
+                                            //     implicitWidth: parent.width
+                                            //     implicitHeight: parent.height
+                                            //     propagateComposedEvents: true
+                                            //
+                                            //     onContainsMouseChanged: {
+                                            //         if (this.containsMouse)
+                                            //         {
+                                            //             hoverTimer.isDisappearing = false;
+                                            //             hoverTimer.stop()
+                                            //         } 
+                                            //         else 
+                                            //         {
+                                            //             hoverTimer.isDisappearing = true;
+                                            //             hoverTimer.restart()
+                                            //         }
+                                            //     }
+                                            // }
+
+                                            // Component {
+                                            //     id: activeWindowItemDelegate
+                                            // }
+
+                                            Rectangle {
+                                                id: backgroundRect
+                                                color: taskbar.taskbarColor
+                                                border { 
+                                                    width: 2
+                                                    color: taskbar.taskbarComplimentColor
+                                                }
+                                                radius: 4
+                                                anchors {
+                                                    top: parent.top
+                                                    margins: 8
+                                                    bottom: parent.bottom
+                                                    left: parent.left
+                                                    right: parent.right
+                                                    leftMargin: 8 
+                                                }
+
+                                                ListView {
+                                                    id: duplicateListView
+                                                    width: duplicateClassesPopupWindow.implicitWidth 
+                                                    height: parent.height - parent.anchors.margins
+                                                    x: parent.anchors.leftMargin / 2 
+                                                    y: parent.anchors.margins / 2
+                                                    anchors {
+                                                    }
+
+                                                    orientation: Qt.Horizontal
+                                                    delegate: screenViewItemDelegate                                           
+                                                    spacing: 4
+                                                    model: valuesModel
+
+                                                    ScriptModel {
+                                                        id: valuesModel
+                                                        values: {
+                                                            const reducedValues = 
+                                                                Hyprland.toplevels.values
+                                                                    .filter(({lastIpcObject}) => lastIpcObject.class === modelData.lastIpcObject.class)
+                                                                    .reduce((acc, {lastIpcObject}, k) => {
+                                                                        const {class: ipcClass, address} = lastIpcObject;
+                                                                        const stringifiedObject = JSON.stringify(lastIpcObject);
+                                                                        if (acc[ipcClass]) 
+
+                                                                            acc[ipcClass].push(stringifiedObject)
+
+                                                                        else {
+                                                                            if (address)
+
+                                                                                acc[ipcClass] = [stringifiedObject];
+                                                                        }
+
+                                                                        return acc;
+                                                                    }, {})
+
+                                                            const all = reducedValues[modelData.lastIpcObject.class]
+                                                            const single = [all[0]];
+                                                            return all
+                                                        }
+                                                    }
+                                                }
+
+                                                Component {
+                                                    id: screenViewItemDelegate
+                                                    WrapperMouseArea {
+                                                        id: mouseArea
+                                                        hoverEnabled: true
+                                                        required property var modelData
+                                                        required property int index
+                                                        width: duplicateClassesPopupWindow.containerRectSize
+
+                                                        Timer {
+                                                            id: showElementTimer
+                                                            interval: 250
+                                                            running: false
+                                                            repeat: false
+
+                                                            property var modifiedAddresses: []
+                                                            property var specialWorkspace: undefined
+                                                            onTriggered: {
+                                                                const activeWorkspace = Hyprland.focusedWorkspace;
+                                                                const currentWorkspace = JSON.parse(modelData).workspace;
+                                                                const currentSpecialWorkspaceName = 
+                                                                    currentWorkspace.name.match(/special:(.+)/)?.[1]
+
+                                                                Hyprland.toplevels.values.forEach(({lastIpcObject: e}) =>
+                                                                {
+                                                                    if (e.address != JSON.parse(modelData).address)
+                                                                    {
+                                                                        modifiedAddresses.push(e.address);
+                                                                        ["", "inactive", "fullscreen"].forEach((alphaItem) =>
+                                                                        {
+                                                                            Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem}override 1`)
+                                                                            Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem} 0`)
+                                                                        })
+                                                                    }
+
+
+                                                                })
+
+                                                                if (currentSpecialWorkspaceName)
+                                                                {
+                                                                    const mainTL = Hyprland.workspaces.values.find((e) => e.name === Hyprland.activeToplevel?.workspace?.name)
+                                                                    if (mainTL.name !== currentWorkspace.name)
+                                                                    {
+                                                                        this.specialWorkspace = currentSpecialWorkspaceName;
+                                                                        Hyprland.dispatch(`togglespecialworkspace ${currentSpecialWorkspaceName}`)
+                                                                    }
+                                                                }
+
+
+                                                                // console.log(`hovered for over ${(this.interval / 1000).toString().substring(0, 4)} seconds`)
+                                                            }
+
+                                                            onRunningChanged: {
+                                                            }
+                                                        }
+
+                                                        property var didClick: false
+                                                        onClicked: {
+                                                            this.didClick = true;
+
+                                                            const parsedModelData = JSON.parse(modelData);
+                                                            const currentWorkspace = parsedModelData.workspace;
+                                                            const foundMatchingWorkspace = Hyprland.workspaces.values.find((e) => e.name === currentWorkspace?.name);
+                                                            Hyprland.dispatch(`movetoworkspace ${Hyprland.focusedMonitor.activeWorkspace.name},address:${parsedModelData.address}`)
+                                                            Hyprland.dispatch(`focuswindow address:${parsedModelData.address}`)
+                                                            Hyprland.refreshToplevels();
+                                                            Hyprland.refreshWorkspaces();
+                                                            showElementTimer.stop();
+                                                        }
+
+                                                        onContainsMouseChanged: {
+                                                            if (this.containsMouse)
+                                                            {
+                                                                showElementTimer.restart()
+                                                            } 
+                                                            else 
+                                                            {
+
+                                                                ["", "inactive", "fullscreen"].forEach((alphaItem) =>
+                                                                {
+                                                                    Hyprland.toplevels.values.filter((e) => e?.lastIpcObject?.address).forEach(({lastIpcObject: e}) =>
+                                                                    {
+                                                                        Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem}override 1`)
+                                                                        Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem} 1`)
+                                                                        Hyprland.dispatch(`setprop address:${e.address} alpha${alphaItem}override 0`)
+                                                                    })
+                                                                })
+
+                                                                if (showElementTimer.running)
+
+                                                                    showElementTimer.stop()
+
+                                                                if (showElementTimer.specialWorkspace && !this.didClick)
+
+                                                                    Hyprland.dispatch(`togglespecialworkspace ${showElementTimer.specialWorkspace}`)
+
+
+                                                                // clear old arr
+                                                                showElementTimer.modifiedAddresses = []
+                                                                showElementTimer.specialWorkspace = undefined;
+                                                                this.didClick = false;
+                                                            }
+                                                            console.log(this.containsMouse)
+                                                        }
+
+                                                        anchors {
+                                                            top: parent ? parent.top : undefined
+                                                            bottom: parent ? parent.bottom : undefined
+                                                        }
+                                                        Rectangle {
+                                                            id: containerRect
+                                                            color: "transparent"
+                                                            clip: {
+                                                                // console.log(modelData)
+                                                                return true;
+                                                            }
+
+                                                            border {
+                                                                width: duplicateClassesPopupWindow.containerRectBorderSize
+                                                                color: taskbar.taskbarComplimentColor
+                                                            }
+
+                                                            radius: 2
+
+                                                            width: parent.width
+
+                                                            anchors {
+                                                                top: parent ? parent.top : undefined
+                                                                bottom: parent ? parent.bottom : undefined
+                                                            }
+
+                                                            /**
+                                                             * i had to do some weird bullhonkey
+                                                             * because some windows have different
+                                                             * ratios (for some reason?) 
+                                                             *
+                                                             * so, i opted to just tuck the screencopy
+                                                             * underneath the rectangle overlay. this also
+                                                             * allows me to comfortably have a border
+                                                             * radius as a result! this is cool.
+                                                             */
+                                                            ScreencopyView {
+                                                                id: sourceItem
+                                                                z: -1
+                                                                visible: true
+                                                                live: true
+                                                                captureSource: {
+                                                                    const E = Hyprland.toplevels.values.find((e) => e.lastIpcObject.address === JSON.parse(modelData).address)
+                                                                    return E?.wayland ?? null
+                                                                }
+
+                                                                paintCursor: false
+
+
+                                                                width: duplicateClassesPopupWindow.containerRectSize - containerRect.border.width
+                                                                height: parent.height - containerRect.border.width
+                                                                constraintSize {
+                                                                    width: duplicateClassesPopupWindow.containerRectSize
+                                                                    height: parent.height
+                                                                }
+
+                                                                anchors {
+                                                                    top: parent.top
+                                                                    bottom: parent.bottom
+                                                                    left: parent.left
+                                                                    right: parent.right
+                                                                    // divide by 2 because... duh?
+                                                                    // its essentially positioned halfway 
+                                                                    // in the inside border
+                                                                    centerIn: parent
+                                                                }
+                                                            }
+
+                                                            Rectangle {
+                                                                width: parent.width
+                                                                height: 32
+                                                                color: `#${mouseArea.containsMouse ? "99" : "00"}${taskbar.taskbarComplimentColor.substring(1)}`
+                                                                anchors {
+                                                                    top: parent.top
+                                                                    bottom: parent.bottom
+                                                                    horizontalCenter: parent.horizontalCenter
+                                                                }
+
+                                                                Rectangle {
+                                                                    id: coverBorder
+                                                                    width: nameText.contentWidth + 12
+                                                                    color: taskbar.taskbarMidColor
+                                                                    height: nameText.contentHeight
+                                                                    radius: 4
+                                                                    opacity: 0.7
+
+                                                                    anchors {
+                                                                        bottom: parent.bottom
+                                                                        horizontalCenter: parent.horizontalCenter
+                                                                        bottomMargin: 8
+                                                                    }
+
+                                                                    border {
+                                                                        width: 2
+                                                                        color: taskbar.taskbarComplimentColor
+                                                                    }
+
+
+                                                                    Text {
+                                                                        color: "white"
+                                                                        id: nameText
+                                                                        width: sourceItem.width - 24
+                                                                        wrapMode: Text.Wrap;
+                                                                        horizontalAlignment: Text.AlignHCenter
+                                                                        verticalAlignment: Text.AlignVCenter
+                                                                        text: {
+                                                                            return JSON.parse(modelData).title
+                                                                        }
+
+                                                                        anchors {
+                                                                            centerIn: parent
+                                                                        }
+
+                                                                        font {
+                                                                            weight: 600
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            anchor {
+                                                item: icon
+                                                edges: Edges.Top
+                                                rect {
+                                                    y: -height
+                                                    x: -(width - (lView.spacing * 2 )) / 2 + (icon.width / 2) - lView.spacing
+                                                }
+                                            }
+                                        }
 
                                         PopupWindow {
                                             id: menuWindow
@@ -542,6 +911,9 @@ ShellRoot {
                                             color: "transparent"
                                             implicitWidth: 160
                                             implicitHeight: 32 * contextModel.values.length
+
+
+
                                             anchor {
                                                 item: icon
                                                 edges: Edges.Top
@@ -585,7 +957,6 @@ ShellRoot {
                                                         }
 
                                                         onContainsMouseChanged: function(mouseChangedStatus) {
-                                                            console.log(this.containsMouse)
                                                             listItemDetails.color = this.containsMouse ?  "#66FFFFFF" : "transparent"
                                                         }
 
@@ -655,7 +1026,6 @@ ShellRoot {
                                                                 onTriggered: function(mouse, [contextId, contextData])
                                                                 {
                                                                     Hyprland.dispatch(`closewindow address:${modelData.lastIpcObject.address}`)
-                                                                    console.log(this.text)
                                                                 }
                                                             }
                                                     })
@@ -800,7 +1170,6 @@ ShellRoot {
                         const { name, data } = rawEvent;
                         if (name == "openwindow")
                         {
-                            console.log(`window opened: ${data}`)
                             Hyprland.refreshToplevels()
                         }
                     })
