@@ -1,13 +1,3 @@
-
-/*
- * maybe a bottom bar that curves into the side of the screen
- * and a top bar that curves out from the side with the same radius
- * as the bottom which has a centered time, active process name to the left,
- * system options to the right
- *
- * bottom bar is dedicated for apps and system tray things
- */
-
 /*
  * TODO: add mechanism that swaps back to your original special/normal
  * workspace by checking the Hyprland.activeToplevel.workspace?.name
@@ -581,31 +571,6 @@ ShellRoot {
                                                 }
                                             }
 
-                                            // WrapperMouseArea {
-                                            //     z: 400
-                                            //     hoverEnabled: true
-                                            //     implicitWidth: parent.width
-                                            //     implicitHeight: parent.height
-                                            //     propagateComposedEvents: true
-                                            //
-                                            //     onContainsMouseChanged: {
-                                            //         if (this.containsMouse)
-                                            //         {
-                                            //             hoverTimer.isDisappearing = false;
-                                            //             hoverTimer.stop()
-                                            //         } 
-                                            //         else 
-                                            //         {
-                                            //             hoverTimer.isDisappearing = true;
-                                            //             hoverTimer.restart()
-                                            //         }
-                                            //     }
-                                            // }
-
-                                            // Component {
-                                            //     id: activeWindowItemDelegate
-                                            // }
-
                                             Rectangle {
                                                 id: backgroundRect
                                                 color: taskbar.taskbarColor
@@ -682,8 +647,14 @@ ShellRoot {
                                                             repeat: false
 
                                                             property var modifiedAddresses: []
-                                                            property var specialWorkspace: undefined
+                                                            property var workspaceSpecial: undefined
+                                                            property var workspace: undefined
                                                             onTriggered: {
+                                                                Hyprland.refreshWorkspaces()
+                                                                if (this.workspace)
+
+                                                                    return;
+
                                                                 const activeWorkspace = Hyprland.focusedWorkspace;
                                                                 const currentWorkspace = JSON.parse(modelData).workspace;
                                                                 const currentSpecialWorkspaceName = 
@@ -704,15 +675,32 @@ ShellRoot {
 
                                                                 })
 
+                                                                const mainToplevel = Hyprland.workspaces.values.find((e) => e.name === Hyprland.activeToplevel?.workspace?.name)
                                                                 if (currentSpecialWorkspaceName)
                                                                 {
-                                                                    const mainTL = Hyprland.workspaces.values.find((e) => e.name === Hyprland.activeToplevel?.workspace?.name)
-                                                                    if (mainTL.name !== currentWorkspace.name)
+                                                                    if (mainToplevel.name !== currentWorkspace.name)
                                                                     {
-                                                                        this.specialWorkspace = currentSpecialWorkspaceName;
+                                                                        this.workspaceSpecial = currentSpecialWorkspaceName;
                                                                         Hyprland.dispatch(`togglespecialworkspace ${currentSpecialWorkspaceName}`)
                                                                     }
+                                                                } 
+                                                                else if (activeWorkspace)
+                                                                {
+                                                                    // check to see if the target
+                                                                    // workspace is on the current 
+                                                                    // face monitors...
+                                                                    const targetWorkspace = Hyprland.workspaces.values.find((e) => 
+                                                                    {
+                                                                        return e.name.toString() === currentWorkspace.name.toString()
+                                                                    })
+
+                                                                    if (targetWorkspace && !targetWorkspace.active)
+                                                                    {
+                                                                        this.workspace = activeWorkspace.name
+                                                                        targetWorkspace.activate()
+                                                                    }
                                                                 }
+
 
 
                                                                 // console.log(`hovered for over ${(this.interval / 1000).toString().substring(0, 4)} seconds`)
@@ -758,14 +746,24 @@ ShellRoot {
 
                                                                     showElementTimer.stop()
 
-                                                                if (showElementTimer.specialWorkspace && !this.didClick)
+                                                                if (showElementTimer.workspaceSpecial && !this.didClick)
+                                                                {
+                                                                    Hyprland.dispatch(`togglespecialworkspace ${showElementTimer.workspaceSpecial}`)
+                                                                } 
+                                                                else if (showElementTimer.workspace)
+                                                                {
+                                                                    const previousWorkspace = Hyprland.workspaces.values.find((e) => e.name == showElementTimer.workspace)
+                                                                    if (previousWorkspace)
 
-                                                                    Hyprland.dispatch(`togglespecialworkspace ${showElementTimer.specialWorkspace}`)
+                                                                        previousWorkspace.activate()
+                                                                }
+
 
 
                                                                 // clear old arr
                                                                 showElementTimer.modifiedAddresses = []
-                                                                showElementTimer.specialWorkspace = undefined;
+                                                                showElementTimer.workspaceSpecial = undefined;
+                                                                showElementTimer.workspace = undefined;
                                                                 this.didClick = false;
                                                             }
                                                             console.log(this.containsMouse)
