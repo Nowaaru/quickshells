@@ -1142,8 +1142,8 @@ ShellRoot {
 
     PanelWindow {
         id: workspaceViewer
-        width: 32
-        height: 32
+        implicitWidth: 32
+        implicitHeight: 32
 
         exclusionMode: ExclusionMode.Ignore
         color: 'transparent'
