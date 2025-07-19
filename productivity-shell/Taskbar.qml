@@ -263,12 +263,20 @@ ShellRoot {
                             menu: modelData.menu
                             anchor {
                                 item: icon
+                                edges: Edges.Top
+
+                                adjustment: PopupAdjustment.SlideY
+                                gravity: Edges.Top | Edges.Right
+
                                 rect {
-                                    y: -icon.height - (icon.height / 4)
-                                    x: -(icon.width * 2) - (lView.spacing)
+                                    y: 0
+                                    x: -menu.width / 2
+                                    height: icon.height
+                                    width: 0
                                 }
                             }
                         }
+
 
                         WrapperMouseArea {
                             id: mouseArea
