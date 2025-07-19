@@ -229,6 +229,28 @@ ShellRoot {
                     source: "./assets/power-off-solid.svg"
                     height: root.topbarHeight
                 }
+
+                PSContextMenu {
+                    id: contextWindow
+                    mainBorderColor: taskbar.taskbarMidColor; // mid
+                    backgroundColor: taskbar.taskbarColor //taskbar
+                    baseDotColor: taskbar.taskbarComplimentColor // compliment
+                    item: powerButton
+
+                    menuItems: ({
+                            close_window: {
+                                text: "Shutdown",
+                                onTriggered: function(mouse, [contextId, contextData])
+                                {
+                                    console.log("hey there")
+                                }
+                            }
+                    })
+                }
+
+                onClicked: {
+                    contextWindow.visible = true;
+                }
             }
         }
     }
