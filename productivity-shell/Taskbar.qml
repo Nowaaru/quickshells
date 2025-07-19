@@ -1238,6 +1238,7 @@ ShellRoot {
                 right: parent.right
             }
 
+
             primaryTransform: Scale {
                 xScale: -1
                 yScale: 1
@@ -1255,7 +1256,129 @@ ShellRoot {
                     y: waveyLineRight.height / 2
                 }
             }
+
         }
     }
 
+    PanelWindow {
+        id: workspaceViewer
+        width: 32
+        height: 32
+
+        exclusionMode: ExclusionMode.Ignore
+        color: 'transparent'
+
+        anchors {
+
+            bottom: true
+            left: true
+        }
+
+        margins {
+            left: 16
+            bottom: 6
+        }
+
+        Rectangle {
+            width: parent.width
+            height: workspacesGridView.cellHeight * workspacesGridView.rows + workspacesGridView.cellPadding
+            color: "#AA000000"
+            radius: 2
+
+            anchors {
+                centerIn: parent
+            }
+
+            Component {
+                id: workspacesDotComponent
+                WrapperMouseArea {
+                    id: mouseArea
+                    hoverEnabled: true
+                    width: workspacesGridView.cellWidth - workspacesGridView.cellPadding
+                    height: workspacesGridView.cellHeight - workspacesGridView.cellPadding
+                    required property var modelData
+                    required property int index
+
+                    onClicked: {
+                        if (modelData.active)
+
+                            return;
+
+                        Hyprland.dispatch(`workspace ${modelData.name}`)
+                    }
+
+                    Rectangle {
+                        width: parent.width
+                        height: parent.height
+
+                        radius: 100
+
+                        color: {
+                            const focusedColor = "00FF00";
+                            const activeColor = "FFF0FF";
+                            let chosenColor = "FFFFFF";
+
+                            if (modelData.focused)
+                            {
+                                chosenColor = focusedColor;
+                            }
+                            else if (modelData.active)
+                            {
+                                chosenColor = activeColor;
+                            }
+                            return `#${mouseArea.containsMouse ? "FF" : "CC"}${chosenColor}`
+                        }
+
+                        Tooltip {
+                            visible: mouseArea.containsMouse
+                            text: `Workspace ${modelData.name}`
+
+                            horizontalAlignment: Text.AlignHCenter
+                            leftPadding: 2
+                            rightPadding: 2
+
+                            anchor {
+                                window: workspaceViewer
+                                rect.y: -workspaceViewer.height / 2
+                                rect.x: (parent.width / 2) - (this.width / 2)
+                            }
+
+                            opacity: 1
+                            backgroundColor: "#44FFFFFF"
+                        }
+                    }
+                }
+            }
+
+
+            GridView {
+                property int rows: Math.ceil(this.count / maxCellsPerLine) // ceil this one because one dot makes a whole new row
+                property int cellPadding: 4
+                property int maxCellsPerLine: Math.sqrt(maxCells)
+                property int maxCells: 9
+
+                id: workspacesGridView
+                cellWidth: ((parent.width - cellPadding) / maxCellsPerLine) 
+                cellHeight: cellWidth
+                flow: GridView.FlowLeftToRight
+                layoutDirection: Qt.LeftToRight
+                width: parent.width
+                height: parent.height
+
+                anchors {
+                    fill: parent
+                    topMargin: cellPadding
+                    leftMargin: cellPadding
+                    centerIn: parent
+                }
+
+                model: {
+                    Hyprland.refreshWorkspaces()
+                    return Hyprland.workspaces.values.filter(({name}) => parseInt(name)).slice(0, this.maxCells + 1)
+                }
+
+                delegate: workspacesDotComponent
+            }
+        }
+    }
 }
