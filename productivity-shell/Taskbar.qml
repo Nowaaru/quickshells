@@ -995,148 +995,6 @@ ShellRoot {
                                         }
                                     }
 
-                                    PopupWindow {
-                                        id: menuWindow
-                                        visible: false
-                                        color: "transparent"
-                                        implicitWidth: 160
-                                        implicitHeight: 32 * contextModel.values.length
-
-
-
-                                        anchor {
-                                            item: icon
-                                            edges: Edges.Top
-                                            rect {
-                                                y: -height
-                                                x: -(width - (lView.spacing * 2 )) / 2 + (icon.width / 2) - lView.spacing
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            id: containerItem
-                                            width: menuWindow.width
-                                            color: taskbar.taskbarColor
-                                            height: menuWindow.height
-                                            radius: 8
-
-                                            border {
-                                                color: taskbar.taskbarMidColor
-                                                width: 2
-                                            }
-
-                                            Component {
-                                                id: menuItemDelegate
-                                                WrapperMouseArea {
-                                                    hoverEnabled: true
-                                                    required property var modelData
-                                                    required property int index
-                                                    implicitWidth: parent.width
-                                                    implicitHeight: 32 - (containerItem.border.width * 2)
-                                                    acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-                                                    anchors.horizontalCenter: parent.horizontalCenter
-                                                    anchors.verticalCenter: parent.verticalCenter
-
-                                                    onClicked: function(mouse) {
-                                                        if (mouse.button & Qt.LeftButton)
-
-                                                            modelData[1]/*contextData*/.onTriggered(mouse, modelData)
-
-                                                        else menuWindow.visible = false;
-                                                    }
-
-                                                    onContainsMouseChanged: function(mouseChangedStatus) {
-                                                        listItemDetails.color = this.containsMouse ?  "#66FFFFFF" : "transparent"
-                                                    }
-
-
-                                                    Rectangle {
-                                                        id: listItemDetails
-                                                        color: "#00FFFFFF"
-                                                        radius: containerItem.radius / 1.25
-
-                                                        Component {
-                                                            id: potentialImage
-                                                            Image {
-                                                            }
-                                                        }
-
-                                                        Loader {
-                                                            property var itemContainsImage: Object.keys(modelData[1]/*contextData */).includes("image")
-                                                            source: itemContainsImage ? modelData[1].image : ""
-                                                            sourceComponent: itemContainsImage ? potentialImage : undefined
-                                                        }
-
-                                                        Rectangle {
-                                                            id: dotContainer
-                                                            implicitWidth: 8
-                                                            height: implicitWidth - containerItem.border.width
-                                                            radius: 40
-                                                            color: Object.keys(modelData[1]).includes("color") ? modelData[1].color : taskbar.taskbarComplimentColor
-                                                            anchors {
-                                                                leftMargin: containerItem.border.width
-                                                                left: parent.left
-                                                                right: text.left
-                                                                verticalCenter: parent.verticalCenter
-                                                            }
-                                                        }
-
-                                                        Text {
-                                                            id: text
-                                                            width: parent.width - dotContainer.implicitWidth
-                                                            height: parent.height
-                                                            anchors {
-                                                                right: parent.right
-                                                            }
-
-                                                            verticalAlignment:Text.AlignVCenter
-                                                            leftPadding: dotContainer.implicitWidth / 2
-                                                            color: "white"
-
-                                                            font {
-                                                                pointSize: 10
-                                                                weight: 600
-                                                                family: "VictorMonoNFM-Semibold"
-                                                            }
-                                                            text: {
-                                                                const [contextId, contextData] = modelData;
-                                                                return contextData.text
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            ScriptModel {
-                                                id: contextModel
-                                                property var baseMenuContexts: ({
-                                                        close_window: {
-                                                            text: "Close",
-                                                            onTriggered: function(mouse, [contextId, contextData])
-                                                            {
-                                                                Hyprland.dispatch(`closewindow address:${modelData.lastIpcObject.address}`)
-                                                            }
-                                                        }
-                                                })
-                                                values: {
-                                                    return Object.entries(baseMenuContexts)
-                                                }
-                                            }
-
-                                            ListView {
-                                                id: contextMenuListView
-                                                width: parent.width - (parent.border.width * 2) - 8
-                                                height: parent.height - (parent.border.width * 2) - 2
-                                                anchors { 
-                                                    centerIn: parent
-                                                }
-                                                delegate: menuItemDelegate
-                                                model: contextModel.values
-                                            }
-                                        }
-                                    }
-
                                     Tooltip {
                                         visible: hoverArea.containsMouse
                                         text: 
@@ -1155,6 +1013,28 @@ ShellRoot {
                                         opacity: 1
                                         backgroundColor: "#44FFFFFF"
                                     }
+
+                                    // TODO: use a loader here
+                                    PSContextMenu {
+                                        id: menuWindow
+                                        mainBorderColor: taskbar.taskbarMidColor; // mid
+                                        backgroundColor: taskbar.taskbarColor //taskbar
+                                        baseDotColor: taskbar.taskbarComplimentColor // compliment
+                                        spacingCompensation: lView.spacing
+                                        item: icon
+
+                                        menuItems:({
+                                                close_window: {
+                                                    text: "Close",
+                                                    onTriggered: function(mouse, [contextId, contextData])
+                                                    {
+                                                        Hyprland.dispatch(`closewindow address:${modelData.lastIpcObject.address}`)
+                                                        menuWindow.visible = false;
+                                                    }
+                                                }
+                                        })
+                                    }
+
                                 }
                             }
                         }
