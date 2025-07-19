@@ -4,6 +4,7 @@ import Quickshell // for PanelWindows
 import Quickshell.Widgets // for Wrappers
 import QtQuick // for Texts
 import QtQuick.Controls // for Buttons
+import Quickshell.Hyprland // for Hyprland IPC
 
 ShellRoot {
     id: root
@@ -236,20 +237,46 @@ ShellRoot {
                     backgroundColor: taskbar.taskbarColor //taskbar
                     baseDotColor: taskbar.taskbarComplimentColor // compliment
                     item: powerButton
+                    anchor.edges: Edges.Bottom
+                    anchor.rect.y: 20
+                    anchor.gravity: Edges.Bottom | Edges.Right
+
+                    property var genericTrigger: ((_this) => 
+                    {
+                        Quickshell.execDetached(`hyprctl notify 0 5000 rgb(${_this.color.toString().substring(_this.color.toString().length > 7 ? 3 : 1)}) ${_this.text} is not implemented yet.`.split(' '));
+                    })
 
                     menuItems: ({
                             close_window: {
                                 text: "Shutdown",
+                                color: "#AADF2935",
+                                onTriggered: function()
+                                {
+                                    contextWindow.genericTrigger(this)
+                                }
+                            },
+                            reboot: {
+                                text: "Restart",
+                                color: "#AAFCFC4C",
                                 onTriggered: function(mouse, [contextId, contextData])
                                 {
-                                    console.log("hey there")
+                                    contextWindow.genericTrigger(this)
+
+                                }
+                            },
+                            logout: {
+                                text: "Logout",
+                                color: contextWindow.baseDotColor,
+                                onTriggered: function(mouse, [contextId, contextData])
+                                {
+                                    contextWindow.genericTrigger(this)
                                 }
                             }
                     })
                 }
 
                 onClicked: {
-                    contextWindow.visible = true;
+                    contextWindow.visible = !contextWindow.visible
                 }
             }
         }
