@@ -22,10 +22,6 @@ PopupWindow {
     implicitWidth: 160
     implicitHeight: 32 * contextModel.values.length
 
-
-    MenuItem {
-    }
-
     anchor {
         id: anchors
         edges: Edges.Top
@@ -52,11 +48,10 @@ PopupWindow {
                 required property var modelData
                 required property int index
                 implicitWidth: parent.width
-                implicitHeight: 32 - (containerItem.border.width * 2)
+                implicitHeight: 32 - (containerItem.border.width / 2)
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                 anchors.horizontalCenter: parent.horizontalCenter
-                anchors.verticalCenter: parent.verticalCenter
 
                 onClicked: function(mouse) {
                     if (mouse.button & Qt.LeftButton)
@@ -152,6 +147,7 @@ PopupWindow {
             anchors { 
                 centerIn: parent
             }
+            orientation: ListView.Vertical
             delegate: menuItemDelegate
             model: contextModel.values
         }
