@@ -697,9 +697,7 @@ ShellRoot {
                                                                     return acc;
                                                                 }, {})
 
-                                                        const all = reducedValues[modelData.lastIpcObject.class]
-                                                        const single = [all[0]];
-                                                        return all
+                                                        return reducedValues[modelData.lastIpcObject.class]
                                                     }
                                                 }
                                             }
