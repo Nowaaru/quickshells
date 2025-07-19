@@ -11,7 +11,6 @@ PanelWindow {
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: implicitHeight
     implicitHeight: 16
-    mask: Region {}
     color: "black"
 
 
