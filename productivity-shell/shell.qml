@@ -44,6 +44,25 @@ ShellRoot {
     }
 
     Tooltip {
+        id: tooltipTime
+        text: Qt.formatDateTime(clock.date, "hh:mm:ss - yyyy-MM-dd")
+
+        border {
+            width: 2
+            color: "#202020"
+        }
+
+        verticalAlignment: Text.AlignVCenter
+        visible: timeMouseController.containsMouse
+        anchor.window: topbar
+        anchor.rect.x: topbar.width / 2 - (tooltipTime.width / 2)
+        anchor.rect.y: topbar.height
+        backgroundColor: "black"
+        textColor: "white"
+        opacity: 0.85
+    }
+
+    Tooltip {
         visible: powerButton.hovered
         id: tooltipPower
         text: "Power"
