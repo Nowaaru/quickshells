@@ -48,7 +48,7 @@ PopupWindow {
                 required property var modelData
                 required property int index
                 implicitWidth: parent.width
-                implicitHeight: 32 - (containerItem.border.width / 2)
+                implicitHeight: 32 - (containerItem.border.width * (contextModel.values.length > 1 ? 0.5 : 2))
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -67,7 +67,7 @@ PopupWindow {
 
                 Rectangle {
                     id: listItemDetails
-                    color: "#00FFFFFF"
+                    color: "transparent"
                     radius: containerItem.radius / 1.25
 
 
