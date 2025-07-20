@@ -34,7 +34,7 @@ ShellRoot {
 
         anchor.adjustment: PopupAdjustment.None
         anchor.window: menuButtonPanel
-        anchor.rect.x: menuButton.width + menuButton.width / 4
+        anchor.rect.x: menuButton.width + 2
         verticalAlignment: Text.AlignVCenter
         leftPadding: 0
         rightPadding: border.width + 0.5
@@ -55,12 +55,13 @@ ShellRoot {
 
         anchor.adjustment: PopupAdjustment.None
         anchor.window: powerButtonPanel
-        anchor.rect.x: -powerButton.width * 2 - menuButton.width / 4
+        anchor.rect.x: -powerButton.width * 2 - 2
         anchor.edges: Edges.Left
 
         verticalAlignment: Text.AlignVCenter
+        horizontalAlignment: Text.AlignHRight
         leftPadding: 0
-        rightPadding: border.width + 0.5
+        rightPadding: border.width
 
         backgroundColor: "black"
         textColor: "white"
@@ -97,6 +98,26 @@ ShellRoot {
                     }
 
                     color: "white"
+                }
+            }
+
+            Text {
+                visible: !tooltipMenu.visible
+                width: 80
+                height: 20
+                x: 120 + tooltipMenu.border.width
+                verticalAlignment: Text.AlignVCenter
+                text: {
+                    const currentToplevelName = Hyprland.activeToplevel?.lastIpcObject?.initialClass?.match(/^(\w+)/)?.[0] ?? ""
+                    const capitalizedToplevelName = `${currentToplevelName.substring(0,1).toUpperCase()}${currentToplevelName.substring(1)}`;
+
+                    return capitalizedToplevelName
+                }
+                font.weight: 600
+                color: "white"
+                anchors {
+                    top: menuButtonPanel.top
+                    left: menuButtonPanel.left
                 }
             }
         }
@@ -214,6 +235,12 @@ ShellRoot {
                     source: "./assets/bars-solid.svg"
                     width: menuBackground.width - (menuBackground.width * 0.25)
                     height: menuBackground.height - (menuBackground.height * 0.25)
+                }
+
+                HoverHandler {
+                    id: menuHoverHandler
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                    cursorShape: Qt.PointingHandCursor
                 }
             }
         }
