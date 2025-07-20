@@ -216,6 +216,7 @@ ShellRoot {
                     id: menuBackground
                     color: menuButton.hovered ? "#44FFFFFF" : "transparent"
                     radius: 50
+                    z: -1
                     anchors {
                         fill: parent
                         centerIn: parent
@@ -223,9 +224,47 @@ ShellRoot {
                     }
                 }
 
+                // TODO: use a loader for the anchors or something? maybe an objectmodel?
                 anchors {
                     fill: menuBackground
                     centerIn: menuBackground
+                }
+
+                onClicked: {
+                    menuContextWindow.visible = !menuContextWindow.visible
+                }
+
+                PSContextMenu {
+                    id: menuContextWindow
+                    mainBorderColor: taskbar.taskbarMidColor; // mid
+                    backgroundColor: taskbar.taskbarColor //taskbar
+                    baseDotColor: taskbar.taskbarComplimentColor // compliment
+                    item: menuButton
+                    anchor.edges: Edges.Bottom
+                    anchor.rect.y: 20
+                    anchor.gravity: Edges.Bottom | Edges.Right
+
+                    property var genericTrigger: ((_this) => 
+                    {
+                        Quickshell.execDetached(`hyprctl notify 0 5000 rgb(${_this.color.toString().substring(_this.color.toString().length > 7 ? 3 : 1)}) ${_this.text} is not implemented yet.`.split(' '));
+                    })
+
+                    menuItems: ({
+                            close: {
+                                text: "Close",
+                                color: menuContextWindow.baseDotColor,
+                                onTriggered: function(mouse, [contextId, contextData])
+                                {
+                                    Hyprland.refreshToplevels();
+                                    if (!Hyprland.activeToplevel?.lastIpcObject)
+
+                                        return;
+
+                                    Hyprland.dispatch(`closewindow address:${Hyprland.activeToplevel.lastIpcObject?.address}`)
+                                    menuContextWindow.visible = false;
+                                }
+                            }
+                    })
                 }
 
                 icon {
@@ -241,6 +280,7 @@ ShellRoot {
                     id: menuHoverHandler
                     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                     cursorShape: Qt.PointingHandCursor
+                    grabPermissions: PointerHandler.CanTakeOverFromAnything
                 }
             }
         }
