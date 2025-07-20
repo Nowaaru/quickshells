@@ -7,7 +7,7 @@
     classes: {
         types: "array",
         of: {
-            types: [ "regex", "string" ],
+            types: [ "regex", "string" ]
         },
         optional: true
     },
@@ -27,26 +27,27 @@
 
     contexts: {
         type: "array",
-        of: {
-            type: "object",
-            of: {
-                text: {
-                    type: "string",
-                    optional: false
-                },
+        of: [
+            {
+                type: "object",
+                of: {
+                    text: {
+                        type: "string",
+                        optional: false
+                    },
 
-                onTriggered: {
-                    type: "function",
-                    optional: true
+                    onTriggered: {
+                        type: "function",
+                        optional: true
+                    }
+
+                    color: {
+                        type: "string",
+                        optional: true
+                    }
                 }
-
-                color: {
-                    type: "string",
-                    optional: true
-                }
-
-                into: "schema"
-            }
-        }
+            },
+            "schema"
+        ]
     }
 }
