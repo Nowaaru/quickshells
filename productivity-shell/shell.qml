@@ -290,7 +290,7 @@ ShellRoot {
                     cache: false
                     color: "#FCFC4C"
                     name: "bars-solid"
-                    source: "./assets/bars-solid.svg"
+                    source: "assets/icons/bars-solid.svg"
                     width: menuBackground.width - (menuBackground.width * 0.25)
                     height: menuBackground.height - (menuBackground.height * 0.25)
                 }
@@ -345,7 +345,7 @@ ShellRoot {
                     cache: false
                     color: "#DF2935"
                     name: "bars-solid"
-                    source: "./assets/power-off-solid.svg"
+                    source: "assets/icons/power-off-solid.svg"
                     width: powerBackground.width - (powerBackground.width * 0.50)
                     height: powerBackground.height - (powerBackground.height * 0.50)
                 }

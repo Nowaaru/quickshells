@@ -456,7 +456,7 @@ ShellRoot {
                 }
 
                 icon {
-                    source: "assets/chevron-up-solid.svg"
+                    source: "assets/icons/chevron-up-solid.svg"
                     cache: true
                     color: `#${this.hovered ? "FF" : "88"}FFFFFF`
 
