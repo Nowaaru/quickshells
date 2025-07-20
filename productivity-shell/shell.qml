@@ -23,6 +23,7 @@ ShellRoot {
     // TODO: make startup overlay
     // TODO: make shutdown overlay
     Tooltip {
+        visible: menuButton.hovered
         id: tooltipMenu
         text: "Menu"
 
@@ -31,26 +32,36 @@ ShellRoot {
             color: "#202020"
         }
 
+        anchor.adjustment: PopupAdjustment.None
         anchor.window: menuButtonPanel
         anchor.rect.x: menuButton.width + menuButton.width / 4
-        anchor.rect.y: -2
+        verticalAlignment: Text.AlignVCenter
+        leftPadding: 0
+        rightPadding: border.width + 0.5
+
         backgroundColor: "black"
         textColor: "white"
     }
 
     Tooltip {
-        id: tooltipTime
-        text: Qt.formatDateTime(clock.date, "hh:mm:ss - yyyy-MM-dd")
+        visible: powerButton.hovered
+        id: tooltipPower
+        text: "Power"
 
         border {
             width: 2
             color: "#202020"
         }
 
-        visible: timeMouseController.containsMouse
-        anchor.window: topbar
-        anchor.rect.x: topbar.width / 2 - (tooltipTime.width / 2)
-        anchor.rect.y: topbar.height
+        anchor.adjustment: PopupAdjustment.None
+        anchor.window: powerButtonPanel
+        anchor.rect.x: -powerButton.width * 2 - menuButton.width / 4
+        anchor.edges: Edges.Left
+
+        verticalAlignment: Text.AlignVCenter
+        leftPadding: 0
+        rightPadding: border.width + 0.5
+
         backgroundColor: "black"
         textColor: "white"
     }
@@ -184,6 +195,16 @@ ShellRoot {
                     id: menuBackground
                     color: menuButton.hovered ? "#44FFFFFF" : "transparent"
                     radius: 50
+                    anchors {
+                        fill: parent
+                        centerIn: parent
+                        margins: 1
+                    }
+                }
+
+                anchors {
+                    fill: menuBackground
+                    centerIn: menuBackground
                 }
 
                 icon {
@@ -191,7 +212,8 @@ ShellRoot {
                     color: "#FCFC4C"
                     name: "bars-solid"
                     source: "./assets/bars-solid.svg"
-                    height: root.topbarHeight
+                    width: menuBackground.width - (menuBackground.width * 0.25)
+                    height: menuBackground.height - (menuBackground.height * 0.25)
                 }
             }
         }
@@ -199,17 +221,17 @@ ShellRoot {
         PanelWindow {
             id: powerButtonPanel
             color: "transparent"
-            implicitWidth: root.topbarHeight - 1
-            implicitHeight: root.topbarHeight - 2
+            implicitWidth: root.topbarHeight
+            implicitHeight: root.topbarHeight
             exclusionMode: ExclusionMode.Ignore
 
             anchors {
                 top: true
                 right: true
+
             }
 
             margins {
-                top: 1
                 right: waveyLineTopRight.width + (waveyLineTopRight.width / 24) // 96 * 4 = 24; ideally /24 will give a nice ratio  across multiple ratios
             }
 
@@ -221,6 +243,16 @@ ShellRoot {
                     id: powerBackground
                     color: powerButton.hovered ? "#44FFFFFF" : "transparent"
                     radius: 50
+                    anchors {
+                        fill: parent
+                        centerIn: parent
+                        margins: 2
+                    }
+                }
+
+                anchors {
+                    fill: powerBackground
+                    centerIn: powerBackground
                 }
 
                 icon {
@@ -228,11 +260,12 @@ ShellRoot {
                     color: "#DF2935"
                     name: "bars-solid"
                     source: "./assets/power-off-solid.svg"
-                    height: root.topbarHeight
+                    width: powerBackground.width - (powerBackground.width * 0.50)
+                    height: powerBackground.height - (powerBackground.height * 0.50)
                 }
 
                 PSContextMenu {
-                    id: contextWindow
+                    id: powerContextWindow
                     mainBorderColor: taskbar.taskbarMidColor; // mid
                     backgroundColor: taskbar.taskbarColor //taskbar
                     baseDotColor: taskbar.taskbarComplimentColor // compliment
@@ -252,7 +285,7 @@ ShellRoot {
                                 color: "#AADF2935",
                                 onTriggered: function()
                                 {
-                                    contextWindow.genericTrigger(this)
+                                    powerContextWindow.genericTrigger(this)
                                 }
                             },
                             reboot: {
@@ -260,23 +293,29 @@ ShellRoot {
                                 color: "#AAFCFC4C",
                                 onTriggered: function(mouse, [contextId, contextData])
                                 {
-                                    contextWindow.genericTrigger(this)
+                                    powerContextWindow.genericTrigger(this)
 
                                 }
                             },
                             logout: {
                                 text: "Logout",
-                                color: contextWindow.baseDotColor,
+                                color: powerContextWindow.baseDotColor,
                                 onTriggered: function(mouse, [contextId, contextData])
                                 {
-                                    contextWindow.genericTrigger(this)
+                                    powerContextWindow.genericTrigger(this)
                                 }
                             }
                     })
                 }
 
+                HoverHandler {
+                    id: powerHoverHandler
+                    acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                    cursorShape: Qt.PointingHandCursor
+                }
+
                 onClicked: {
-                    contextWindow.visible = !contextWindow.visible
+                    powerContextWindow.visible = !powerContextWindow.visible
                 }
             }
         }
