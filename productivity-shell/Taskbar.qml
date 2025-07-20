@@ -1,10 +1,4 @@
-/*
- * TODO: add mechanism that swaps back to your original special/normal
- * workspace by checking the Hyprland.activeToplevel.workspace?.name
- * and then checking if it contains the 'special' regex. if it does,
- * then 'togglespecialwindow' back to the primary. otherwise, use
- * 'moveworkspacetomonitor'
- */
+/* QML Imports */
 
 import Quickshell // for PanelWindows
 import Quickshell.Widgets // for IconImages
@@ -15,6 +9,12 @@ import QtQuick // for Texts
 import QtQuick.Shapes // for Shapes
 import QtQuick.Controls // for Shapes
 import QtQuick.Effects
+
+/* Context Menu Imports */
+
+import "assets/contexts/base.mjs" as BaseContext
+import "assets/contexts/browsers.mjs" as BrowserContext
+import "assets/contexts/terminals.mjs" as TerminalContext
 
 ShellRoot {
     id: taskbar
@@ -1023,16 +1023,49 @@ ShellRoot {
                                         spacingCompensation: lView.spacing
                                         item: icon
 
-                                        menuItems:({
-                                                close_window: {
-                                                    text: "Close",
-                                                    onTriggered: function(mouse, [contextId, contextData])
+                                        menuItems: {
+                                            Hyprland.refreshToplevels();
+
+                                            const allContexts = [
+                                                BrowserContext,
+                                                TerminalContext,
+                                                BaseContext,
+                                            ];
+
+                                            const filteredContexts = allContexts.filter((ctx) =>
+                                            {
+                                                const passesPluralClasses = ["classes", "initialClasses"].some((e) =>
+                                                {
+                                                    const pluralRemovedElement = e.substring(0, e.length - 2)
+                                                    if (ctx[e])
                                                     {
-                                                        Hyprland.dispatch(`closewindow address:${modelData.lastIpcObject.address}`)
-                                                        menuWindow.visible = false;
+                                                        return ctx[e].some((classQualifier) =>
+                                                        {
+                                                            const testedItem = modelData.lastIpcObject?.[pluralRemovedElement];
+                                                            return classQualifier instanceof RegExp 
+                                                                    ? testedItem.match(classQualifier)?.[0]
+                                                                    : classQualifier == testedItem
+                                                        })
                                                     }
-                                                }
-                                        })
+                                                })
+
+                                                const passesSingularClasses = ["class", "initialClass"].some((e) =>
+                                                {
+                                                    const testedItem = modelData.lastIpcObject?.[e].match(ctx[e])?.[0]
+                                                    return ctx[e] instanceof RegExp
+                                                            ? testedItem.match(ctx[e])?.[0]
+                                                            : ctx[e] == testedItem
+                                                })
+
+                                    
+                                                return passesSingularClasses || passesPluralClasses;
+                                            }).map((e) => e.contexts)
+
+                                            const preModifiedContexts = Object.assign({}, ...filteredContexts)
+                                            return Object.keys(preModifiedContexts).map((idx) => Object.assign({}, preModifiedContexts[idx], {
+                                                ipcObject: modelData.lastIpcObject
+                                            }))
+                                        }
                                     }
 
                                 }

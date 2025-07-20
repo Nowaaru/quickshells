@@ -52,11 +52,30 @@ PopupWindow {
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
 
                 anchors.horizontalCenter: parent.horizontalCenter
+                property var genericTrigger: ((name) => 
+
+                {
+                    const color = modelData[1].color ?? baseDotColor;
+                    Quickshell.execDetached(`hyprctl notify 0 5000 rgb(${color.toString().substring(color.toString().length > 7 ? 3 : 1)}) ${modelData[0]} is not implemented yet.`.split(' '));
+                })
 
                 onClicked: function(mouse) {
                     if (mouse.button & Qt.LeftButton)
-
-                        modelData[1]/*contextData*/.onTriggered(mouse, modelData)
+                    {
+                        if ("onTriggered" in modelData[1])
+                        {
+                            modelData[1]/*contextData*/.onTriggered({
+                                mouse, 
+                                modelData,
+                                Hyprland,
+                                Quickshell
+                            })
+                        }
+                        else
+                        {
+                            this.genericTrigger()
+                        }
+                    }
 
                     menuWindow.visible = false;
                 }
